@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+<div class="row">
+    <div class="col" style="margin-bottom: 10px;">
+        <div class="card text-white bg-dark mb-3" style="width: 100%;">
+            <div class="card-body">
+                {% if message%}
+                <div class="alert alert-danger" role="alert">
+                    {{message}}
+                </div>
+                {% endif %}
+                <h5 class="card-title">User {{user_data['name']}} </h5>
+                <h5 class="card-title">ID {{user_data['_id']}} </h5>
+                {% if user_data['room_list']%}
+                <h5 class="card-title">Room allowed</h5>
+                <ul>
+                    {%for user in user_data['room_list']%}
+                    <li class="nav-item">{{user}}</li>
+                    {%endfor%}
+                </ul>
+                {% endif %}
+               
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+   
+{% endblock %}

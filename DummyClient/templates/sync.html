@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+<div class="row">
+    <div class="col" style="margin-bottom: 10px;">
+    <div class="card text-white bg-dark mb-3" style="width: 100%;">
+        {% if message%}
+        <div class="alert alert-danger" role="alert">
+            {{message}}
+        </div>
+        {% endif %}
+        <div class="card-body">
+            <h5 class="card-title">User List</h5>
+            <form class="p-3" action="/user/sync" method="POST">
+                <input type="text" class="d-none" value="save_list" name="button">
+                <input type="text" class="text-white bg-dark m-3 form-control" placeholder="Add User Id List" name="add_user_list" aria-describedby="addon-wrapping">
+                <input type="text" class="text-white bg-dark m-3 form-control" placeholder="Remove User Id List" name="remove_user_list" aria-describedby="addon-wrapping">
+                <input type="number" class="text-white bg-dark m-3 form-control" placeholder="Room Id" name="room_id" aria-describedby="addon-wrapping">
+                <button type="submit" class="m-3 btn btn-primary">Save</button>
+            </form>
+        </div>
+    </div>
+    </div>
+    <div class="col" style="margin-bottom: 10px;">
+        <div class="card text-white bg-dark mb-3" style="width: 100%;">
+            <div class="card-body">
+                <h5 class="card-title">Sync Command</h5>
+                <form class="p-3" action="/user/sync" method="POST">
+                    <input type="text" class="text-white bg-dark m-3 form-control" placeholder="Room Id" name="room_id" aria-describedby="addon-wrapping">
+                    <button type="submit" class="m-3 btn btn-primary" name="button" value="sync_command">Sync</button>
+                    <button type="submit" class="m-3 btn btn-primary" name="button" value="resync_command">Restart Sync</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+   
+{% endblock %}

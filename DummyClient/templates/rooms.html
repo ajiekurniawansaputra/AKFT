@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+<div class="row">
+    <div class="col" style="margin-bottom: 10px;">
+        <div class="card text-white bg-dark mb-3" style="width: 100%;">
+            <div class="card-body">
+                {% if message%}
+                <div class="alert alert-danger" role="alert">
+                    {{message}}
+                </div>
+                {% endif %}
+                <h5 class="card-title">Rooms</h5>
+                <ul>
+                    {%for room in room_data%}
+                    <li class="nav-item">{{room['_id']}} {{room['name']}} <a href="{{ url_for('room', room_id=room['_id'], request_method='details')}}">Edit</a> <a href="{{ url_for('room', room_id=room['_id'], request_method='delete')}}">Delete</a></li>
+                    {%endfor%}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+   
+{% endblock %}
