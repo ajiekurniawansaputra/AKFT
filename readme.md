@@ -48,6 +48,13 @@ receive a command to get fingerprint model and uid, expected payload json
 ```
 device will capture new fingerprint model and uid and then send it to _'SGLCERIC/enro/model'_
 
+### 5. 'SGLCERIC/open'
+receive command to open door, boolean
+{
+    'msg':{'state': True},
+    'data':{None}
+    }
+
 ## Publish
 list of topic the device will publish to
 ### 1. 'SGLCERIC/auth/fp'
@@ -55,13 +62,14 @@ trigered when device find a match
 ```
 {
     'msg':{
-        'sensor':'FP',
+        'date':str(date),
         'userId':finger_id,
         'roomId':this_room.id
         'result':True/False(bollean)},
     'data':{None}
     }
 ```
+date is in str, need to be converted to datetime first
 user_id is location in which the model is saved
 
 ### 2. 'SGLCERIC/auth/rfid'
@@ -69,7 +77,7 @@ triggered when device read uid
 ```
 {
     'msg':{
-        'sensor':'RF',
+        'date':str(date),
         'roomId':this_room.id,
         'data':uid},
     'data':{None}
@@ -86,3 +94,10 @@ triggered when device receive command from topic _'SGLCERIC/enro/id'_
     'data':{'model':model}
 }
 ```
+
+### 3. 'SGLCERIC/connection/(roomid)'
+triggered when device lost conection or connected
+```
+{True/False}
+```
+curently not encrypted

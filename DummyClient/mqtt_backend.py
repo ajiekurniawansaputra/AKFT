@@ -26,28 +26,35 @@ def auth_fp(client, userdata, msg):
     try:
         logging.debug('Receiving fingerprint authentication result')
         msg, _ = receive_mqtt_decrypt(msg.payload)
-        room_id = msg['roomId']
-        user_id = msg['userId']
+        date = msg['date']
+        logging.debug(date)
+        date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
+        room_id = msg['room_id']
+        user_id = msg['user_id']
         logging.debug('Saving data room id {room_id}, user id {user_id} to database')
         log_db.insert_one({'room_id':room_id,'user_id':user_id,
-            'date':datetime.datetime.now().replace(microsecond=0),'sensor':'FP'})
+            'date':date,'sensor':'FP'})
+        logging.debug('Saved')
     except Exception as e:
             logging.error(e)
 
 def auth_rfid(client, userdata, msg):
     """ This callback process uid data from rfid, authentication result are saved in database"""
     try:
-        logging.debug('Receiving rfid authentication result')
+        logging.debug('Receiving rfid authentication data')
         msg, _ = receive_mqtt_decrypt(msg.payload)
+        date = msg['date']
+        logging.debug(date)
+        date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         room_id = msg['roomId']
         data = msg['data']
         user_id = 2222
         result = random.choice([True, False])
         send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
-        logging.debug('Saving data room id {room_id}, user id {user_id}, data {data} to database')
         if result == True:
+            logging.debug('Saving data room id {room_id}, user id {user_id}, data {data} to database')
             log_db.insert_one({'room_id':room_id,'user_id':user_id,
-                    'date':datetime.datetime.now().replace(microsecond=0),'sensor':'RFID'})
+                    'date':date,'sensor':'RFID'})
     except Exception as e:
             logging.error(e)
 

@@ -83,9 +83,9 @@ def room(request_method, room_id):
     """ This url show a room and delete one"""
     try:
         if request_method == 'details': #get
-            users_list = user_db.find({'room_list':{'$in':[room_id]}}, {'_id':0,'name':1})
+            #users_list = user_db.find({'room_list':{'$in':[room_id]}}, {'_id':0,'name':1})
             room_data = room_db.find_one({'_id':room_id})
-            return render_template("room.html", room_data=room_data, users_list=users_list)
+            return render_template("room.html", room_data=room_data)
         elif request_method == 'delete': #delete
             ack_message = room_db.delete_one({'_id':room_id})
             logging.debug('{room_id} is deleted')
@@ -143,6 +143,19 @@ def sync():
                 send_mqtt_encrypt('SGLCERIC/sync/del/'+str(room_id),{'location':'resync'})
                 return render_template("sync.html")
         else : return render_template("sync.html")
+    except Exception as e:
+        logging.error(e)
+
+@app.route('/opendoor/<string:state>')
+def opendoor(state):
+    """ This url send command to open all dor in an emergency, or close when anything is get back to normal"""
+    try:
+        if state == 'true':
+            send_mqtt_encrypt('SGLCERIC/open',{'state':True})
+        else:
+            send_mqtt_encrypt('SGLCERIC/open',{'state':False})
+        logs_data = log_db.find({},{ "_id": 0}).limit(5).sort('date', -1)
+        return render_template("index.html", logs_data=logs_data, message = 'command sent')
     except Exception as e:
         logging.error(e)
 
@@ -211,4 +224,4 @@ if __name__ == '__main__':
     user_db, room_db, log_db = open_db()
     client = mqtt.Client(protocol=mqtt.MQTTv311) 
     main(debug=True)
-    app.run(host="0.0.0.0", port=5000, use_reloader=True)
+    app.run(host="0.0.0.0", port=5000, use_reloader=False)
