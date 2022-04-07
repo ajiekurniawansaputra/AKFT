@@ -7,6 +7,7 @@ from busio import UART
 from typing import Tuple
 import RPi.GPIO as GPIO
 import logging
+import datetime
 
 class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     GPIO.setmode(GPIO.BCM)
@@ -49,15 +50,15 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     def action(self, ack_packet):
         logging.debug(f'ack code: {ack_packet}')
         if ack_packet == 0:
-            #we should open the door here
+            util.open_door()
             logging.debug('Fingerprint Match')
             util.play_sound('Fingerprint match.mp3')
             logging.debug('Send Payload')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
-                {'sensor':'FP',
-                #dont forget convert sensor_user_id to user_id
-                'userId':self.finger_id,
-                'roomId':util.this_room.id})
+                {'date':str(datetime.datetime.now().replace(microsecond=0))[2:],
+                'user_id':self.finger_id,
+                'room_id':util.this_room.id,
+                'result': True})
         elif ack_packet == 9:
             logging.debug('Fingerprint is rejected. Try another method')
             util.play_sound("Sorry, the room is restricted. you're not allowed to enter.mp3")

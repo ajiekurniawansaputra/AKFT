@@ -67,6 +67,16 @@ def play_sound(file):
     while mixer.music.get_busy()==True:
         continue
 
+def door_command(client, userdata, msg):
+    msg, _ = receive_mqtt_decrypt(msg.payload)
+    if msg['state'] == True:
+        open_door()
+    else:
+        print("tok tok e pintune tutup")
+
+def open_door():
+    print("tok tok e pintune dibuka")
+    
 this_room = Room()
 client = mqtt.Client(protocol=mqtt.MQTTv311)
 with open("server_public_key.pem", "rb") as key_file:  #server public key

@@ -31,21 +31,39 @@ def main(debug=False):
     
 #add error handling to background
 def background():
+    logging.debug('Background thread start')
     client = util.client
     client.message_callback_add('SGLCERIC/auth/rfid/'+str(util.this_room.id), nfc.response)
     client.message_callback_add('SGLCERIC/sync/add/'+str(util.this_room.id), fp.add)
     client.message_callback_add('SGLCERIC/sync/del/'+str(util.this_room.id), fp.delete)
+    client.message_callback_add('SGLCERIC/open', util.door_command)
+    client.will_set(topic='SGLCERIC/connection/'+str(util.this_room.id), payload='Device Lost Connection', qos=1, retain=True )
+    client.on_connect = on_connect
+    client.on_disconnect = on_disconnect
     #client.tls_set('/home/pi/Documents/client/ca.crt', '/home/pi/Documents/client/client.crt', '/home/pi/Documents/client/client.key')
-    #client.connect('54.196.200.69', 8883, 8000)
-    client.connect('broker.hivemq.com', 1883, 8000)
-    logging.debug('Subscribe to SGLCERIC/auth/rfid/{str(util.this_room.id)}')
-    print('SGLCERIC/auth/rfid/'+str(util.this_room.id))
-    client.subscribe('SGLCERIC/auth/rfid/'+str(util.this_room.id))
-    client.subscribe('SGLCERIC/sync/add/'+str(util.this_room.id))
-    client.subscribe('SGLCERIC/sync/del/'+str(util.this_room.id))
+    #client.connect('54.196.200.69', 8883)
+    client.connect('broker.hivemq.com', 1883, 10)
     client.loop_forever()
 
+def on_connect(client, userdata, flags, rc):
+    if rc==0:
+        logging.debug('MQTT Conected')
+        client.publish(topic='SGLCERIC/connection/'+str(util.this_room.id), payload='Connected', qos=1, retain=True)
+        client.connected_flag = True
+        client.subscribe('SGLCERIC/auth/rfid/'+str(util.this_room.id))
+        client.subscribe('SGLCERIC/sync/add/'+str(util.this_room.id))
+        client.subscribe('SGLCERIC/sync/del/'+str(util.this_room.id))
+        client.subscribe('SGLCERIC/open')
+    else:
+        logging.debug('MQTT Conection Refused {rc}')
+        
+def on_disconnect(client, userdata, rc):
+    logging.debug('MQTT Disconected, {rc}')
+    client.connected_flag = False
+    #add reconect funtion
+
 def fingerprint_sensor():
+    logging.debug('fingerprint thread start')
     while True:
         try:
             fp.read()
@@ -53,6 +71,7 @@ def fingerprint_sensor():
             print(e)
 
 def rfid_sensor():
+    logging.debug('rfid thread start')
     while True:
         try:
             nfc.read()
@@ -60,6 +79,7 @@ def rfid_sensor():
             print(e)
 
 def touchpad_sensor():
+    logging.debug('touchpad thread start')
     while True:
         try:
             time.sleep(5)

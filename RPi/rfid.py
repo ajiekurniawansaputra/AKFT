@@ -5,6 +5,7 @@ import other as util
 import pincam
 import subprocess
 import time
+import datetime
 import logging
 
 class RFID():
@@ -27,7 +28,7 @@ class RFID():
         logging.debug('Sending Payload')
         #consider adding sensor to the topic instead
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
-            {'sensor':'RF',
+            {'date':str(datetime.datetime.now().replace(microsecond=0))[2:],
             'roomId':util.this_room.id,
             'data':uid})
         #pincam.take_photo()
@@ -44,6 +45,7 @@ class RFID():
         msg, _ = util.receive_mqtt_decrypt(msg.payload)
         self.busy = False
         if msg['result'] == True:
+            util.open_door()
             logging.debug('rfid Match')
             util.play_sound('RFID Match.mp3')
         elif msg['result'] == False:
