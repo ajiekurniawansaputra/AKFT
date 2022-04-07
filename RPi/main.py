@@ -41,7 +41,6 @@ def background():
     logging.debug('Subscribe to SGLCERIC/auth/rfid/{str(util.this_room.id)}')
     print('SGLCERIC/auth/rfid/'+str(util.this_room.id))
     client.subscribe('SGLCERIC/auth/rfid/'+str(util.this_room.id))
-    client.subscribe('SGLCERIC/auth/fp/'+str(util.this_room.id))
     client.subscribe('SGLCERIC/sync/add/'+str(util.this_room.id))
     client.subscribe('SGLCERIC/sync/del/'+str(util.this_room.id))
     client.loop_forever()

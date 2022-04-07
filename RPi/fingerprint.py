@@ -4,7 +4,7 @@ Fingerprint. Pin. SGLCERIC. CAPSTONE.
 import other as util
 import adafruit_fingerprint_edit as adafruit_fingerprint
 from busio import UART
-from typing import Tuple, List, Union
+from typing import Tuple
 import RPi.GPIO as GPIO
 import logging
 
@@ -13,7 +13,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     GPIO.setup (18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
     def __init__(self, uart: UART, passwd: Tuple[int, int, int, int] = (0, 0, 0, 0)):
-        super().__init__(uart, passwd = (0, 0, 0, 0))
+        super().__init__(uart, passwd)
         self.busy = False
         
     def read(self):
@@ -88,8 +88,10 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                     raise Exception('Error formating')
                 logging.debug('fingerprint formated')
             else:
-                #delete a location
-                pass
+                ack_packet = self.delete_model(int(location), 1)
+                if ack_packet != 0:
+                    raise Exception('Error Delete {location}')
+                logging.debug('Model {location} Deleted')
         except Exception as e:
             logging.error(e)
         finally:

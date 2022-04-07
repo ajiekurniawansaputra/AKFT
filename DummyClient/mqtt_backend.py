@@ -9,7 +9,7 @@ import pymongo
 import datetime
 import random
 import base64
-
+import logging
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
@@ -17,85 +17,85 @@ from cryptography.hazmat.primitives import serialization
 from cryptography.fernet import Fernet
 
 """
-CALLBACK. APP MQTT. SGLCERIC. CAPSTONE.
+CALLBACK. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
 """
 def auth_fp(client, userdata, msg):
-    msg, _ = receive_mqtt_decrypt(msg.payload)
-    room_id = msg['roomId']
-    user_id = msg['userId']
+    """ This callback process authentication result from fingerprint on sensor match
+    data transfered including room_id, user_id are saved into databased with timestamp.
+    """
     try:
+        logging.debug('Receiving fingerprint authentication result')
+        msg, _ = receive_mqtt_decrypt(msg.payload)
+        room_id = msg['roomId']
+        user_id = msg['userId']
+        logging.debug('Saving data room id {room_id}, user id {user_id} to database')
         log_db.insert_one({'room_id':room_id,'user_id':user_id,
             'date':datetime.datetime.now().replace(microsecond=0),'sensor':'FP'})
-    except: pass                                #error saving
-
-def load_fp(client, userdata, msg):
-    msg, _ = receive_mqtt_decrypt(msg.payload)
-    user_id = msg['user_id']
-    room_id = msg['room_id']
-    try:
-        model = user_db.find_one({"_id":user_id},{'_id':0,'FP':1})[0]['FP']
-        send_mqtt_encrypt('SGLCERIC/auth/fp/'+str(room_id),
-            {'user_id':user_id},
-            {'model':model})
-    except: return                              # raise error model not found
+    except Exception as e:
+            logging.error(e)
 
 def auth_rfid(client, userdata, msg):
-    msg, _ = receive_mqtt_decrypt(msg.payload)
-    room_id = msg['roomId']
-    data = msg['data']
-    print(data)
-    user_id = 2222
-    result = random.choice([True, False])
-    send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
-    if result == True:
-        try:
+    """ This callback process uid data from rfid, authentication result are saved in database"""
+    try:
+        logging.debug('Receiving rfid authentication result')
+        msg, _ = receive_mqtt_decrypt(msg.payload)
+        room_id = msg['roomId']
+        data = msg['data']
+        user_id = 2222
+        result = random.choice([True, False])
+        send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
+        logging.debug('Saving data room id {room_id}, user id {user_id}, data {data} to database')
+        if result == True:
             log_db.insert_one({'room_id':room_id,'user_id':user_id,
-                'date':datetime.datetime.now().replace(microsecond=0),'sensor':'RFID'})
-        except: pass                               #error saving
+                    'date':datetime.datetime.now().replace(microsecond=0),'sensor':'RFID'})
+    except Exception as e:
+            logging.error(e)
 
 def sign_up(client, userdata, msg):
-    msg, data = receive_mqtt_decrypt(msg.payload)
-    user_id = msg['user_id']
-    model_FP = data['model']
-    model_RFID = msg['uid']
+    """ This callback will save uid and model to database"""
     try:
-        user_db.find_one_and_update({'_id':user_id},{'$set':{"FP":model_FP,'RFID':model_RFID}},{})
-    except:
-        client.publish(topic='SGLCERIC/enro/notif', payload='Error Saving') #delete data in db
-        return
-    client.publish(topic='SGLCERIC/enro/notif', payload='Saved')
+        logging.debug('Sign up, Receiving uid and model')
+        msg, data = receive_mqtt_decrypt(msg.payload)
+        user_id = msg['user_id']
+        model_FP = data['model']
+        model_RFID = msg['uid']
+        logging.debug('Saving uid and model for user id {user_id}')
+        try:
+            user_db.find_one_and_update({'_id':user_id},{'$set':{"FP":model_FP,'RFID':model_RFID}},{})
+        except:
+            client.publish(topic='SGLCERIC/enro/notif', payload='Error Saving') #delete data in db
+            raise Exception('error in saving model occured')
+        client.publish(topic='SGLCERIC/enro/notif', payload='Saved')
+    except Exception as e:
+            logging.error(e)
 
 def resync(client, userdata, msg):
-    print('resync')
-    msg, _ = receive_mqtt_decrypt(msg.payload)
-    room_id = msg['room_id']
+    """ This callback sends every model in a room saved in database"""
     try:
+        logging.debug('Resync, Receiving room id')
+        msg, _ = receive_mqtt_decrypt(msg.payload)
+        room_id = msg['room_id']
+        logging.debug('Get user list')
         user_list = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1})['user_list']
-    except Exception as e: 
-        print(e)
-    for i in range(len(user_list)):                    #location=indexonmongodb+1
-        if user_list[i]!=None:
-            try:
-                print(i,user_list[i], 'SGLCERIC/sync/add/'+str(room_id))
+        #location=indexonmongodb+1
+        for i in range(len(user_list)):
+            if user_list[i]!=None:
+                logging.debug('Get {user_list[i]} model')
                 model = user_db.find_one({"_id":user_list[i]},{'_id':0,'FP':1})['FP']
                 if model == None:
-                    print('nomodel')
-                    return
+                    raise Exception('model not found')
+                logging.debug('Send {user_list[i]} model')
                 send_mqtt_encrypt('SGLCERIC/sync/add/'+str(room_id),
                     {'user_id':user_list[i],
                     'location':i+1},
                     {'model':model})
-            except Exception as e:
-                print(e)                                #raise error model not found           
- 
-
-
-def on_message_sync_ack(client, userdata, msg):
-    pass
+    except Exception as e:
+        logging.error(e)
 
 """
-OTHER FUNCTION. APP MQTT. SGLCERIC. CAPSTONE.
+OTHER FUNCTION. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
 """
+
 def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
     if data!=None:
         data = json.dumps(data).encode('utf-8')             #dict to byte
@@ -162,30 +162,43 @@ def open_db():
     log_db = main_db["log"]
     return user_db, room_db, log_db
 
-def start_mqtt():
-    client = mqtt.Client(protocol=mqtt.MQTTv311)
+"""
+MQTT UTILS CALLBACK. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
+"""
+def on_connect(client, userdata, flags, rc):
+    logging.info("Connected flags"+str(flags)+"result code "+str(rc))
+    client.connected_flag=True
+    client.subscribe('SGLCERIC/auth/fp')
+    client.subscribe('SGLCERIC/auth/rfid')
+    client.subscribe('SGLCERIC/enro/model')
+    client.subscribe('SGLCERIC/sync/re')
+
+"""
+MAIN. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
+"""
+
+def main(debug = False):
+    if debug == True:
+        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S',
+                            level=logging.DEBUG)
+    else:
+        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+
     client.message_callback_add('SGLCERIC/auth/fp', auth_fp)
-    client.message_callback_add('SGLCERIC/auth/fp_load', load_fp)
     client.message_callback_add('SGLCERIC/auth/rfid', auth_rfid)
     client.message_callback_add('SGLCERIC/enro/model', sign_up)
     client.message_callback_add('SGLCERIC/sync/re', resync)
-    client.message_callback_add('SGLCERIC/sync/ack', on_message_sync_ack)
-    client.connect("broker.hivemq.com", 1883, 8000)
-    return client
 
-"""
-MAIN. APP MQTT. SGLCERIC. CAPSTONE.
-"""
+    client.on_connect= on_connect
+    client.connect("broker.hivemq.com", 1883, 8000)
+    client.loop_forever()
+
 if __name__ == "__main__":
-    try:
-        private_key, public_key = open_key()
-        user_db, room_db, log_db = open_db()
-        client = start_mqtt()
-        client.subscribe('SGLCERIC/auth/fp') #to be added to the on connect function
-        client.subscribe('SGLCERIC/auth/fp_load')
-        client.subscribe('SGLCERIC/auth/rfid')
-        client.subscribe('SGLCERIC/enro/model')
-        client.subscribe('SGLCERIC/sync/re')
-        client.loop_forever()
-    except Exception as e:
-        print(e)
+    while True:
+        try:
+            private_key, public_key = open_key()
+            user_db, room_db, log_db = open_db()
+            client = mqtt.Client(protocol=mqtt.MQTTv311)
+            main(debug = True)
+        except Exception as e:
+            print(e)
