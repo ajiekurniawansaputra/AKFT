@@ -8,6 +8,7 @@ from typing import Tuple
 import RPi.GPIO as GPIO
 import logging
 import datetime
+import time
 
 class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     GPIO.setmode(GPIO.BCM)
@@ -72,15 +73,25 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
         try:
             msg, _ = util.receive_mqtt_decrypt(msg.payload)
             location = msg['location']
-            while self.busy == True:
+            startTime = time.time()
+            while self.busy == True and ((time.time()-startTime)<10):
                 #wait until the fp not busy
                 pass
+            if (time.time()-startTime)>=10:
+                logging.debug('conection timeout')
+                return
+        except Exception as e:
+            logging.error(e)
+            return
+        try:
             self.busy = True
             if location=='resync':
                 ack_packet = self.empty_library()
                 if ack_packet != 0:
                     raise Exception('Error formating')
                 logging.debug('fingerprint formated')
+                util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
+                    {'room_id':util.this_room.id,'user_id':'all'})
                 util.send_mqtt_encrypt('SGLCERIC/sync/re',
                     {'room_id':util.this_room.id})
             elif location=='all':
@@ -88,11 +99,15 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 if ack_packet != 0:
                     raise Exception('Error formating')
                 logging.debug('fingerprint formated')
+                util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
+                    {'room_id':util.this_room.id,'user_id':'all'})
             else:
                 ack_packet = self.delete_model(int(location), 1)
                 if ack_packet != 0:
                     raise Exception('Error Delete {location}')
                 logging.debug('Model {location} Deleted')
+                util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
+                    {'room_id':util.this_room.id,'user_id':int(location)})
         except Exception as e:
             logging.error(e)
         finally:
@@ -106,10 +121,19 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
             logging.debug('New add Command')
             msg, data = util.receive_mqtt_decrypt(msg.payload)
             location = msg['location']
+            user_id = msg['user_id']
             model = data['model']
-            while self.busy == True:
+            startTime = time.time()
+            while self.busy == True and ((time.time()-startTime)<10):
                 #wait until the fp not busy
                 pass
+            if (time.time()-startTime)>=10:
+                logging.debug('conection timeout')
+                return
+        except Exception as e:
+            logging.error(e)
+            return
+        try:
             self.busy = True
             model = model.split(', ')
             model = [int(i) for i in model]
@@ -120,6 +144,8 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
             if ack_packet != 0:
                 raise Exception('store model error')
             logging.debug(f'fingerprint saved {location}')
+            util.send_mqtt_encrypt('SGLCERIC/sync/add/ack',
+                    {'room_id':util.this_room.id,'user_id':user_id})
         except Exception as e:
             logging.error(e)
         finally:
