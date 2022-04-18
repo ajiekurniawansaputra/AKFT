@@ -8,7 +8,7 @@ list of topic that the device is subscribed to and ready to receive message.
 receive authentication result response, expected payload json
 ```
 {
-    'msg':{'result':True/False(bollean)},
+    'msg':{'result':(bollean)},
     'data':{None}
     }
 ```
@@ -39,7 +39,7 @@ location could be string or int.
 delete one model in the location spesified
 
 ### 4. 'SGLCERIC/enro/id'
-receive a command to get fingerprint model and uid, expected payload json
+receive a command to acquire fingerprint model and uid, expected payload json
 ```
 {
     'msg':{'user_id': (int)},
@@ -50,10 +50,12 @@ device will capture new fingerprint model and uid and then send it to _'SGLCERIC
 
 ### 5. 'SGLCERIC/open'
 receive command to open door, boolean
+```
 {
-    'msg':{'state': True},
+    'msg':{'state': Boolean},
     'data':{None}
     }
+```
 
 ## Publish
 list of topic the device will publish to
@@ -63,9 +65,9 @@ trigered when device find a match
 {
     'msg':{
         'date':str(date),
-        'userId':finger_id,
-        'roomId':this_room.id
-        'result':True/False(bollean)},
+        'userId':(int),
+        'roomId':(int)
+        'result':(bollean)},
     'data':{None}
     }
 ```
@@ -78,26 +80,46 @@ triggered when device read uid
 {
     'msg':{
         'date':str(date),
-        'roomId':this_room.id,
+        'roomId':(int),
         'data':uid},
     'data':{None}
     }
 ```
+date is in str, need to be converted to datetime first
+user_id is location in which the model is saved
 
 ### 3. 'SGLCERIC/enro/model'
-triggered when device receive command from topic _'SGLCERIC/enro/id'_
+triggered after device receive command from topic _'SGLCERIC/enro/id'_ and succesfully acquire fp model and uid
 ```
 {
     'msg':{
         'user_id':(int),
-        'uid':int},
+        'uid':uid},
     'data':{'model':model}
-}
+    }
 ```
 
-### 3. 'SGLCERIC/connection/(roomid)'
+### 4. 'SGLCERIC/connection/(roomid)'
 triggered when device lost conection or connected
 ```
 {True/False}
 ```
 curently not encrypted
+
+### 5. 'SGLCERIC/sync/del/ack'
+triggered when a delete command was succesfully proceed.
+```
+{
+    'msg':{'user_id': (int), 'room_id': (int)},
+    'data':{None}
+    }
+```
+
+### 6. 'SGLCERIC/sync/add/ack'
+triggered when an 'add' command was succesfully proceed.
+```
+{
+    'msg':{'user_id': (int), 'room_id': (int)},
+    'data':{None}
+    }
+```
