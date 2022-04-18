@@ -52,7 +52,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
         logging.debug(f'ack code: {ack_packet}')
         if ack_packet == 0:
             util.open_door()
-            logging.debug('Fingerprint Match')
+            logging.debug(f'Fingerprint Match {self.finger_id}')
             util.play_sound('Fingerprint match.mp3')
             logging.debug('Send Payload')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
@@ -102,12 +102,13 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
                     {'room_id':util.this_room.id,'user_id':'all'})
             else:
+                user_id = msg['user_id']
                 ack_packet = self.delete_model(int(location), 1)
                 if ack_packet != 0:
-                    raise Exception('Error Delete {location}')
-                logging.debug('Model {location} Deleted')
+                    raise Exception(f'Error Delete {location}')
+                logging.debug(f'Model {location} Deleted')
                 util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
-                    {'room_id':util.this_room.id,'user_id':int(location)})
+                    {'room_id':util.this_room.id,'user_id':int(user_id)})
         except Exception as e:
             logging.error(e)
         finally:
@@ -145,7 +146,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 raise Exception('store model error')
             logging.debug(f'fingerprint saved {location}')
             util.send_mqtt_encrypt('SGLCERIC/sync/add/ack',
-                    {'room_id':util.this_room.id,'user_id':user_id})
+                    {'room_id':util.this_room.id,'user_id':int(user_id)})
         except Exception as e:
             logging.error(e)
         finally:
