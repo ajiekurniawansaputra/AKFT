@@ -56,6 +56,14 @@ function sub_topics(){
     MQTTconnect()
 </script>
 
+{% set counter = {
+    'counter_tobeadded': 0,
+    'counter_all': 0,} %}
+
+{% macro increment(dct, key)%}
+    {% if dct.update({key: dct[key] + 1}) %} {% endif %}
+{% endmacro %}
+
 <div class="container">
 <div class="row">
     <div class="col" style="margin-bottom: 10px;">
@@ -66,16 +74,50 @@ function sub_topics(){
                     {{message}}
                 </div>
                 {% endif %}
-                <h5 class="card-title">Room {{room_data['name']}} </h5>
-                <h5 class="card-title" id="messages">Connecting to Sensor</h5>
-                <h5 class="card-title">User allowed to enter</h5>
-                <ul>
-                    {%for user in room_data['user_list']%}
-                    {% if user%}
-                    <li class="nav-item">{{user}}</li>
-                    {% endif %}
-                    {%endfor%}
-                </ul>
+                <div class="d-flex bd-highlight">
+                    <div class="p-2 flex-fill bd-highlight">
+                        <h5 class="card-title">Room {{room_data['name']}} </h5>
+                        <h5 class="card-title">User allowed to enter</h5>
+                        <ul>
+                            {%for user in room_data['user_list']%}
+                                {% if user%}
+                                {{ increment(counter, 'counter_all') }}
+                                    {% if user in room_data['user_list_ack']%}
+                                        {% if loop.index in room_data['user_list_todel']%}
+                                            <li class="nav-item">{{user}} - Saved in the sensor, To be deleted</li>
+                                        {%else%}
+                                            <li class="nav-item">{{user}} - Saved in the sensor</li>
+                                        {% endif %}
+                                    {%else%}
+                                        {{ increment(counter, 'counter_tobeadded') }}
+                                        <li class="nav-item">{{user}} - Not in the sensor, To be added</li>
+                                    {% endif %}
+                                {% endif %}
+                            {%endfor%}
+                        </ul>
+                    </div>
+                    <div class="p-2 flex-fill bd-highlight">
+                        <h5 class="card-title" id="messages">Connecting to Sensor</h5>
+                        <p class="card-title">
+                            Restricted Room </br>
+                            Approimately {{counter['counter_tobeadded']}}seconds to sync.</br>
+                            Approimately {{counter['counter_all']}}seconds to reset and sync.</br>
+
+                        </p>
+                        <form class="" action="/user/sync" method="POST">
+                            <input type=int class="d-none" value={{room_data['_id']}} name="room_id">
+                            <button type="submit" class="m-3 btn btn-primary" name="button" value="sync_command">Sync</button>
+                            <button type="submit" class="m-3 btn btn-primary" name="button" value="resync_command">Reset&Sync</button>
+                        </form>
+                        <h5 class="card-title">Edit List</h5>
+                        <form class="" action="/user/sync" method="POST">
+                            <input type="number" class="d-none" value="{{room_data['_id']}}" name="room_id">
+                            <input type="text" class="text-white bg-dark m-3 form-control" placeholder="Id List" name="user_list" aria-describedby="addon-wrapping">
+                            <button type="submit" class="m-3 btn btn-primary" name="button" value="add">Add</button>
+                            <button type="submit" class="m-3 btn btn-primary" name="button" value="del">Remove</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

@@ -13,15 +13,22 @@
                 {% endif %}
                 <h5 class="card-title">User {{user_data['name']}} </h5>
                 <h5 class="card-title">ID {{user_data['_id']}} </h5>
-                {% if user_data['room_list']%}
-                <h5 class="card-title">Room allowed</h5>
+                {% if room_list%}
+                <h5 class="card-title">Allowed</h5>
                 <ul>
-                    {%for user in user_data['room_list']%}
-                    <li class="nav-item">{{user}}</li>
+                    {%for room in room_list%}
+                    <li class="nav-item">{{room['name']}} <a href="{{ url_for('editlist', mode='remove', user_id=user_data['_id'], room_id=room['_id']) }}">Delete</a></li>
                     {%endfor%}
                 </ul>
                 {% endif %}
-               
+                {% if room_list_nin%}
+                <h5 class="card-title">Not Allowed</h5>
+                <ul>
+                    {%for room in room_list_nin%}
+                    <li class="nav-item">{{room['name']}} <a href="{{ url_for('editlist', mode='add', user_id=user_data['_id'], room_id=room['_id']) }}">Add</a></li>
+                    {%endfor%}
+                </ul>
+                {% endif %}
             </div>
         </div>
     </div>

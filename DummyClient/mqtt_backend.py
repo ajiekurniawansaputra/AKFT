@@ -31,7 +31,7 @@ def auth_fp(client, userdata, msg):
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         room_id = msg['room_id']
         user_id = msg['user_id']
-        logging.debug('Saving data room id {room_id}, user id {user_id} to database')
+        logging.debug(f'Saving data room id {room_id}, user id {user_id} to database')
         log_db.insert_one({'room_id':room_id,'user_id':user_id,
             'date':date,'sensor':'FP'})
         logging.debug('Saved')
@@ -77,7 +77,9 @@ def sign_up(client, userdata, msg):
             logging.error(e)
 
 def resync(client, userdata, msg):
-    """ This callback sends every model in a room saved in database"""
+    """ This callback sends every model in a room saved in database
+    *warning, check timing when delete ack finished and this func start. should be okay if onethreaded
+    """
     try:
         logging.debug('Resync, Receiving room id')
         msg, _ = receive_mqtt_decrypt(msg.payload)
@@ -96,6 +98,60 @@ def resync(client, userdata, msg):
                     {'user_id':user_list[i],
                     'location':i+1},
                     {'model':model})
+    except Exception as e:
+        logging.error(e)
+
+def ack_del(client, userdata, msg):
+    """ This callback record delete ack message from device"""
+    try:
+        logging.debug('Delete ACK')
+        msg, _ = receive_mqtt_decrypt(msg.payload)
+        room_id = msg['room_id']
+        user_id = msg['user_id']
+        logging.debug('Get user list')
+        user_data = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1,'user_list_todel':1,'user_list_ack':1})
+        user_list_todel = user_data['user_list_todel']
+        user_list_ack = user_data['user_list_ack']
+        user_list = user_data['user_list']
+        logging.debug('processing list')
+        if user_id == 'all':
+            for user in user_list_todel:
+                logging.debug(f'deleting {user_list[user]}')
+                user_list[user-1] = None
+                logging.debug(f'deleted')
+            user_list_todel.clear()
+            user_list_ack.clear()
+        else:
+            logging.debug(f'get location')
+            location = user_list.index(user_id)
+            logging.debug(f'location = {location+1}')
+            user_list[location]=None
+            user_list_todel.remove(location+1)
+            user_list_ack.remove(user_id)
+        logging.debug('updating list')
+        room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list":user_list}},{})
+        room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list_ack":user_list_ack}},{})
+        room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list_todel":user_list_todel}},{})
+        logging.debug('list updated')
+    except Exception as e:
+        logging.error(e)
+
+def ack_add(client, userdata, msg):
+    """ This callback record add ack message from device"""
+    try:
+        logging.debug('Add ACK')
+        msg, _ = receive_mqtt_decrypt(msg.payload)
+        room_id = msg['room_id']
+        user_id = msg['user_id']
+        logging.debug('Get user list')
+        user_list_ack = room_db.find_one({'_id':room_id},{'_id':0,'user_list_ack':1})['user_list_ack']
+        if user_id in user_list_ack:
+            logging.warning('warning, trying to add userid to ack, userid already in ack')    
+        else: 
+            user_list_ack.append(user_id)
+        logging.debug('updating list')
+        room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list_ack":user_list_ack}},{})
+        logging.debug('list updated')
     except Exception as e:
         logging.error(e)
 
@@ -179,6 +235,8 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe('SGLCERIC/auth/rfid')
     client.subscribe('SGLCERIC/enro/model')
     client.subscribe('SGLCERIC/sync/re')
+    client.subscribe('SGLCERIC/sync/del/ack')
+    client.subscribe('SGLCERIC/sync/add/ack')
 
 """
 MAIN. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
@@ -195,6 +253,8 @@ def main(debug = False):
     client.message_callback_add('SGLCERIC/auth/rfid', auth_rfid)
     client.message_callback_add('SGLCERIC/enro/model', sign_up)
     client.message_callback_add('SGLCERIC/sync/re', resync)
+    client.message_callback_add('SGLCERIC/sync/del/ack', ack_del)
+    client.message_callback_add('SGLCERIC/sync/add/ack', ack_add)
 
     client.on_connect= on_connect
     client.connect("broker.hivemq.com", 1883, 8000)

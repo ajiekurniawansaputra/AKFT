@@ -11,7 +11,7 @@
                     {{message}}
                 </div>
                 {% endif %}
-                <h5 class="card-title">Rooms</h5>
+                <h5 class="card-title">Rooms - <a href="{{ url_for('sync')}}">sync</a> - <a href="{{ url_for('opendoor', state='true')}}">open all</a></h5>
                 <ul>
                     {%for room in room_data%}
                     <li class="nav-item">{{room['_id']}} {{room['name']}} <a href="{{ url_for('room', room_id=room['_id'], request_method='details')}}">Edit</a> <a href="{{ url_for('room', room_id=room['_id'], request_method='delete')}}">Delete</a></li>

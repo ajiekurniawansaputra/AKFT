@@ -3,7 +3,7 @@ Flask APP. SGLCERIC. CAPSTONE.
 This file runs Flask Framework to render dummy website, 
 each route used to accept form or showing data from database.
 """
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for
 import paho.mqtt.client as mqtt
 import json
 import pymongo
@@ -44,7 +44,7 @@ def users():
             try:
                 logging.debug('Saving New User data')
                 db_ack = user_db.insert_one({'_id':user_id,'name':name,'info':None,
-                                        'room_list':None,'FP':None,'RFID':None})
+                                        'FP':None,'RFID':None})
             except: 
                 return render_template("users.html", message='user already exist', users_data=user_db.find({},{ "_id": 1,'name':1})) #user already exist, edit instead
             logging.debug('Sending Registration Command to RPi')
@@ -53,14 +53,18 @@ def users():
     except Exception as e:
         logging.error(e)
 
-#should use delete method, but not suported in html, too lazy for ajax
 @app.route('/user/<string:request_method>/<int:user_id>')
-def user(request_method, user_id): #
+def user(request_method, user_id):
     """ This url show a user and delete one"""
     try:
         if request_method == 'details': #get
+            message = request.args.get('message')
+            logging.debug('geting user data')
+            room_list = room_db.find({'user_list_ack':{'$in':[user_id]}}, {'_id':1,'name':1})
+            room_list_nin = room_db.find({'user_list_ack':{'$nin':[user_id]}}, {'_id':1,'name':1})
             user_data = user_db.find_one({'_id':user_id})
-            return render_template("user.html", user_data=user_data)
+            logging.debug('render the page')
+            return render_template("user.html", user_data=user_data, room_list=room_list, room_list_nin=room_list_nin, message=message)
         elif request_method == 'delete': #delete
             ack_message = user_db.delete_one({'_id':user_id})
             logging.debug('{user_id} is deleted')
@@ -83,9 +87,9 @@ def room(request_method, room_id):
     """ This url show a room and delete one"""
     try:
         if request_method == 'details': #get
-            #users_list = user_db.find({'room_list':{'$in':[room_id]}}, {'_id':0,'name':1})
+            message = request.args.get('message')
             room_data = room_db.find_one({'_id':room_id})
-            return render_template("room.html", room_data=room_data)
+            return render_template("room.html", room_data=room_data, message=message)
         elif request_method == 'delete': #delete
             ack_message = room_db.delete_one({'_id':room_id})
             logging.debug('{room_id} is deleted')
@@ -105,44 +109,67 @@ def sync():
     try:
         if request.method == 'POST':
             button = request.form['button']
-            if button == 'save_list':
-                logging.debug('edit list')
-                logging.debug('get list data')
-                add_user_list = [int(i) for i in request.form['add_user_list'].split(',')]
-                remove_user_list =[int(i) for i in request.form['remove_user_list'].split(',')] 
+            if button == 'add':
+                add_user_list = [int(i) for i in request.form['user_list'].split(',')]
                 room_id = int(request.form['room_id'])
-                #all this operations should be in mongodb with update_one $[identifier]
-                logging.debug('get old user list')
-                user_list = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1})['user_list']
-                logging.debug('remove some user')
-                for user_id in remove_user_list:
-                    try:
-                        user_list[user_list.index(user_id)]=None
-                        logging.debug('{user_id} is deleted')
-                    except:
-                        logging.warning('{user_id} already none')
-                for user_id in add_user_list:
-                    if user_id in user_list:
-                        logging.warning('{user_id} already in the list')
-                    else:
-                        try:
-                            user_list[user_list.index(None)]=user_id
-                            logging.debug('{user_id} added')
-                        except: 
-                            logging.warning('room is full')
-                db_ack=room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list":user_list}},{})
-                logging.debug('list updated')
-                return render_template("sync.html", message= db_ack)
+                logging.debug('add_user_list')
+                add_list_func(room_id, add_user_list)
+                return redirect(url_for('room', request_method='details', room_id=room_id, 
+                                        message='List updated'))
+            if button == 'del':
+                remove_user_list =[int(i) for i in request.form['user_list'].split(',')]
+                room_id = int(request.form['room_id'])             
+                logging.debug('remove_user_list')
+                remove_list_func(room_id, remove_user_list)
+                return redirect(url_for('room', request_method='details', room_id=room_id, 
+                                        message='List updated'))
             if button == 'sync_command':
-                print('sync_command') #send delete command and add command
+                logging.debug('sending command sync')
                 room_id = request.form['room_id']
-                return render_template("sync.html")
+                return redirect(url_for('room', request_method='details', room_id=room_id, 
+                                        message='Device is processing the request, Refresh the page to update list'))
             if button == 'resync_command':
                 logging.debug('sending command resync')
                 room_id = request.form['room_id']
                 send_mqtt_encrypt('SGLCERIC/sync/del/'+str(room_id),{'location':'resync'})
-                return render_template("sync.html")
+                return redirect(url_for('room', request_method='details', room_id=room_id, 
+                                        message='Device is processing the request, Refresh the page to update list'))
+            return render_template("sync.html", message="unknown button pressed")
         else : return render_template("sync.html")
+    except Exception as e:
+        logging.error(e)
+
+@app.route('/editlist/<string:mode>')
+def editlist(mode):
+    """ This url for add or delete allowed list and send command to add or delete fp model"""
+    try:
+        if mode == 'add':
+            logging.debug('adding user to room')
+            user_id = int(request.args.get('user_id'))
+            room_id = int(request.args.get('room_id'))
+            logging.debug('add_user_list')
+            location = add_list_func(room_id, [user_id], True)
+            logging.debug('Get {user_id} model')
+            model = user_db.find_one({"_id":user_id},{'_id':0,'FP':1})['FP']
+            if model == None:
+                raise Exception('model not found')
+            logging.debug('Send {user_id} model')
+            send_mqtt_encrypt('SGLCERIC/sync/add/'+str(room_id),
+                {'user_id':user_id,
+                'location':location},
+                {'model':model})
+            logging.debug('command sent')
+            return redirect(url_for('user', request_method='details', user_id=user_id, 
+                                        message='Sending Command'))
+        else:
+            logging.debug('removing a user from a room')
+            user_id = int(request.args.get('user_id'))
+            room_id = int(request.args.get('room_id'))
+            logging.debug('remove_user_list')
+            location = remove_list_func(room_id, [user_id], True)
+            send_mqtt_encrypt('SGLCERIC/sync/del/'+str(room_id),{'location':location, 'user_id':user_id})
+            return redirect(url_for('user', request_method='details', user_id=user_id, 
+                                        message='Sending Command'))
     except Exception as e:
         logging.error(e)
 
@@ -206,6 +233,70 @@ def open_db():
     room_db = main_db["room"]
     log_db = main_db["log"]
     return user_db, room_db, log_db
+
+def add_list_func(room_id, add_user_list, unit=False):
+    logging.debug('get old user list')
+    user_data = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1, 'user_list_todel':1})
+    user_list = user_data['user_list']
+    user_list_todel = user_data['user_list_todel']
+    logging.debug('processing list')
+    for user_id in add_user_list:
+        if (user_id in user_list):
+            try:
+                user_list_todel.remove(user_list.index(user_id)+1)
+                logging.warning(f'{user_id} deleted from todel list with the value {user_list.index(user_id)}')
+            except:
+                logging.warning(f'{user_id} not in todel list with the value {user_list.index(user_id)}')
+            logging.warning(f'{user_id} already in the list')
+        else:
+            try:
+                user_list[user_list.index(None)]=user_id
+                logging.debug(f'{user_id} added')
+            except: 
+                logging.warning('room is full')    
+    logging.debug('updating list')
+    room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list":user_list}},{})
+    room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list_todel":user_list_todel}},{})
+    logging.debug('list updated')
+    if unit:
+        logging.debug(f'Get {user_id} location')
+        location = user_list.index(user_id)
+        return location
+    return            
+
+def remove_list_func(room_id, remove_user_list, unit=False):
+    logging.debug('get old user list')
+    user_data = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1,'user_list_todel':1,'user_list_ack':1})
+    user_list = user_data['user_list']
+    user_list_todel = user_data['user_list_todel']
+    user_list_ack = user_data['user_list_ack']
+    logging.debug('processing list')
+    for user_id in remove_user_list:
+        if user_id not in user_list_ack:
+            logging.debug(f'deleting {user_id} from userlist')
+            try:
+                user_list[user_list.index(user_id)] = None
+            except:
+                logging.warning(f'{user_id} is not in userlist nor userlistack')
+            logging.debug(f'deleted')
+        else:
+            if user_id not in user_list_todel:
+                try:
+                    user_list_todel.append(user_list.index(user_id)+1)
+                    logging.debug(f'{user_id} added to todel list')
+                except:
+                    logging.warning(f'adding todel list error')
+            else:
+                logging.warning(f'{user_id} already added to todel list')
+    logging.debug('updating list')
+    room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list":user_list}},{})
+    room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list_todel":user_list_todel}},{})
+    logging.debug('list updated')
+    if unit:
+        logging.debug(f'Get {user_id} location')
+        location = user_list.index(user_id)+1
+        return location
+    return
 
 """
 MAIN. SGLCERIC. CAPSTONE. ####################################################################
