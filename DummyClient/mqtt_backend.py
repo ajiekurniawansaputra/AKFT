@@ -30,11 +30,18 @@ def auth_fp(client, userdata, msg):
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         room_id = msg['room_id']
-        user_id = msg['user_id']
-        logging.debug(f'Saving data room id {room_id}, user id {user_id} to database')
-        log_db.insert_one({'room_id':room_id,'user_id':user_id,
-            'date':date,'sensor':'FP'})
-        logging.debug('Saved')
+        result = msg['result']
+        if result:
+            user_id = msg['user_id']
+            logging.debug(f'Saving data room id {room_id}, user id {user_id} to database')
+            log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
+                'date':date,'sensor':'FP'})
+            logging.debug('Saved')
+        else:
+            logging.debug(f'Saving declined auth to database')
+            log_db.insert_one({'result':result,'room_id':room_id,
+                'date':date,'sensor':'FP'})
+            logging.debug('Saved')
     except Exception as e:
             logging.error(e)
 
@@ -51,7 +58,7 @@ def auth_rfid(client, userdata, msg):
         user_id = 2222
         result = random.choice([True, False])
         send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
-        logging.debug('Saving data room id {room_id}, user id {user_id}, data {data} to database')
+        logging.debug(f'Saving data room id {room_id}, user id {user_id}, data {data} to database')
         log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
                 'date':date,'sensor':'RFID'})
     except Exception as e:
