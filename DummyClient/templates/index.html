@@ -14,7 +14,7 @@
                 <h5 class="card-title">New Auth</h5>
                 <ul>
                     {%for log in logs_data%}
-                    <li class="nav-item">{{log['room_id']}} {{log['user_id']}} {{log['sensor']}} {{log['date']}}</li>
+                    <li class="nav-item">{{log['result']}} {{log['room_id']}} {{log['user_id']}} {{log['sensor']}} {{log['date']}}</li>
                     {%endfor%}
                 </ul>
             </div>

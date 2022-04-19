@@ -51,10 +51,9 @@ def auth_rfid(client, userdata, msg):
         user_id = 2222
         result = random.choice([True, False])
         send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
-        if result == True:
-            logging.debug('Saving data room id {room_id}, user id {user_id}, data {data} to database')
-            log_db.insert_one({'room_id':room_id,'user_id':user_id,
-                    'date':date,'sensor':'RFID'})
+        logging.debug('Saving data room id {room_id}, user id {user_id}, data {data} to database')
+        log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
+                'date':date,'sensor':'RFID'})
     except Exception as e:
             logging.error(e)
 
