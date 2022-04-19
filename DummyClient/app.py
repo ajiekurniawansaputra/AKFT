@@ -198,7 +198,7 @@ def password_set():
         if request.method == 'POST':
             room_id = request.form['room_id']
             password = request.form['password']
-            send_mqtt_encrypt('SGLCERIC/pass/'+str(room_id),{'password':password})
+            send_mqtt_encrypt('SGLCERIC/pass/'+str(room_id),{'password':password}, qos=1, retain=True)
             return redirect(url_for('room', request_method='details', room_id=room_id, message=f'Sending Command to change pin to {password}'))
     except Exception as e:
         logging.error(e)
@@ -206,7 +206,7 @@ def password_set():
 """
 OTHER FUNCTION. SGLCERIC. CAPSTONE. ####################################################################
 """
-def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
+def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
     if data!=None:
         data = json.dumps(data).encode('utf-8')             #dict to byte
         key = Fernet.generate_key()
@@ -226,7 +226,7 @@ def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
             label=None))
     msg = base64.b64encode(msg)                             #byte to string
     msg = msg.decode('utf-8')
-    client.publish(topic=topic, payload=json.dumps({'msg':msg,'data':data}))
+    client.publish(topic=topic, payload=json.dumps({'msg':msg,'data':data}), qos=qos, retain=retain)
 
 def open_key():
     with open("server_private_key.pem", "rb") as key_file: #rpi private key

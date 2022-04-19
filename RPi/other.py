@@ -16,7 +16,7 @@ class Room:
         self.id = 6
         self.password = None
 
-def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
+def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
     if data!=None:
         data = json.dumps(data).encode('utf-8')             #dict to byte
         key = Fernet.generate_key()
@@ -36,7 +36,7 @@ def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
             label=None))
     msg = base64.b64encode(msg)                             #byte to string
     msg = msg.decode('utf-8')
-    client.publish(topic=topic, payload=json.dumps({'msg':msg,'data':data}))
+    client.publish(topic=topic, payload=json.dumps({'msg':msg,'data':data}), qos=qos, retain=retain)
 
 def receive_mqtt_decrypt(msg):
     msg = json.loads(msg)
