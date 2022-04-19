@@ -14,7 +14,7 @@ from cryptography.fernet import Fernet
 class Room:
     def __init__ (self):
         self.id = 6
-        self.password = 0000
+        self.password = None
 
 def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
     if data!=None:

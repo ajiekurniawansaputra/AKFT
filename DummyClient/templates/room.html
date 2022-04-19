@@ -116,6 +116,12 @@ function sub_topics(){
                             <button type="submit" class="m-3 btn btn-primary" name="button" value="add">Add</button>
                             <button type="submit" class="m-3 btn btn-primary" name="button" value="del">Remove</button>
                         </form>
+                        Edit room password
+                        <form class="" action="/pass" method="POST">
+                            <input type="number" class="d-none" value="{{room_data['_id']}}" name="room_id">
+                            <input type="number" class="text-white bg-dark m-3 form-control" placeholder="room password" name="password" aria-describedby="addon-wrapping">
+                            <button type="submit" class="m-3 btn btn-primary">Change</button>
+                        </form>
                     </div>
                 </div>
             </div>

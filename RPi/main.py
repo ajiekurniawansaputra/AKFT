@@ -37,6 +37,7 @@ def background():
     client.message_callback_add('SGLCERIC/sync/add/'+str(util.this_room.id), fp.add)
     client.message_callback_add('SGLCERIC/sync/del/'+str(util.this_room.id), fp.delete)
     client.message_callback_add('SGLCERIC/open', util.door_command)
+    client.message_callback_add('SGLCERIC/pass/'+str(util.this_room.id), util.password_command)
     client.will_set(topic='SGLCERIC/connection/'+str(util.this_room.id), payload='Device Lost Connection', qos=1, retain=True )
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
@@ -54,6 +55,7 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe('SGLCERIC/sync/add/'+str(util.this_room.id))
         client.subscribe('SGLCERIC/sync/del/'+str(util.this_room.id))
         client.subscribe('SGLCERIC/open')
+        client.subscribe('SGLCERIC/pass/'+str(util.this_room.id))
     else:
         logging.debug('MQTT Conection Refused {rc}')
         
@@ -82,7 +84,7 @@ def touchpad_sensor():
     logging.debug('touchpad thread start')
     while True:
         try:
-            time.sleep(5)
+            pincam.password_auth(int(input()))
         except Exception as e:
             print(e)
 

@@ -7,8 +7,20 @@ import os
 import logging
 import base64
         
-class PIN:
-    pass
+def password_command(client, userdata, msg):
+    try:
+        util.this_room.password=msg.payload
+    except Exception as e:
+        logging.error(e)
+        return
+
+def password_auth(pin):
+    msg, _ = util.receive_mqtt_decrypt(util.this_room.password)
+    password = msg['password']
+    if pin == password:
+        logging.debug('pin true')
+    else:
+        logging.debug('pin false')        
 
 def take_photo(date):
     logging.debug('starting camera thread')

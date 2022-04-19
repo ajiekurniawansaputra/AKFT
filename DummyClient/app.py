@@ -80,11 +80,11 @@ def user(request_method, user_id):
         logging.error(e)
 
 @app.route('/rooms',methods=['GET'])
-def rooms():
+def rooms(message=None):
     """ This url show all room"""
     try:
         room_data = room_db.find({},{ "_id": 1,'name':1})
-        return render_template("rooms.html", room_data=room_data)
+        return render_template("rooms.html", room_data=room_data, message=message)
     except Exception as e:
         logging.error(e)
 
@@ -187,8 +187,19 @@ def opendoor(state):
             send_mqtt_encrypt('SGLCERIC/open',{'state':True})
         else:
             send_mqtt_encrypt('SGLCERIC/open',{'state':False})
-        logs_data = log_db.find({},{ "_id": 0}).limit(5).sort('date', -1)
-        return render_template("index.html", logs_data=logs_data, message = 'command sent')
+        return redirect(url_for('rooms', message=f'Sending Command to {state} opendoor'))
+    except Exception as e:
+        logging.error(e)
+
+@app.route('/pass',methods=['POST','GET'])
+def password_set():
+    """ This url send command to open all dor in an emergency, or close when anything is get back to normal"""
+    try:
+        if request.method == 'POST':
+            room_id = request.form['room_id']
+            password = request.form['password']
+            send_mqtt_encrypt('SGLCERIC/pass/'+str(room_id),{'password':password})
+            return redirect(url_for('room', request_method='details', room_id=room_id, message=f'Sending Command to change pin to {password}'))
     except Exception as e:
         logging.error(e)
 
