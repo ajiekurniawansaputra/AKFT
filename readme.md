@@ -57,6 +57,17 @@ receive command to open door, boolean
     }
 ```
 
+### 6. 'SGLCERIC/pass/'+str(this_room.id)
+receive command to change room pin, int
+```
+{
+    'msg':{
+        'room_id': (int),
+        'password': (int)},
+    'data':{None}
+    }
+```
+
 ## Publish
 list of topic the device will publish to
 ### 1. 'SGLCERIC/auth/fp'
