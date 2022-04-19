@@ -20,7 +20,6 @@ def shoot(date):
     logging.debug('taking a photo')
     os.system('libcamera-still -o img.jpg -t 1000 -n --width 1280 --height 720')
     logging.debug('photo captured')
-    
     logging.debug('photo processing')
     with open("img.jpg", "rb") as imageFile:
         img = base64.b64encode(imageFile.read())
@@ -28,3 +27,4 @@ def shoot(date):
         print(img)
     logging.debug('Sending photo')
     util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img})
+    logging.debug('Sent')
