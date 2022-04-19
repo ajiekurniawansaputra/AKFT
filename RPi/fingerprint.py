@@ -2,6 +2,7 @@
 Fingerprint. Pin. SGLCERIC. CAPSTONE.
 """
 import other as util
+import pincam
 import adafruit_fingerprint_edit as adafruit_fingerprint
 from busio import UART
 from typing import Tuple
@@ -34,7 +35,6 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                     raise Exception('Error templating')
                 logging.debug('Identify, Search for matching template')
                 ack_packet = self.finger_search()
-                #pincam.take_photo()
                 self.action(ack_packet)
                 if self.get_image() == 0:
                     logging.debug('Wait to be released')
@@ -50,17 +50,23 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
 
     def action(self, ack_packet):
         logging.debug(f'ack code: {ack_packet}')
+        date = str(datetime.datetime.now().replace(microsecond=0))[2:]
+        pincam.take_photo(date)
         if ack_packet == 0:
             util.open_door()
             logging.debug(f'Fingerprint Match {self.finger_id}')
             util.play_sound('Fingerprint match.mp3')
             logging.debug('Send Payload')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
-                {'date':str(datetime.datetime.now().replace(microsecond=0))[2:],
+                {'date':date,
                 'user_id':self.finger_id,
                 'room_id':util.this_room.id,
                 'result': True})
         elif ack_packet == 9:
+            util.send_mqtt_encrypt('SGLCERIC/auth/fp',
+                {'date':date,
+                'room_id':util.this_room.id,
+                'result': False})
             logging.debug('Fingerprint is rejected. Try another method')
             util.play_sound("Sorry, the room is restricted. you're not allowed to enter.mp3")
         else:
