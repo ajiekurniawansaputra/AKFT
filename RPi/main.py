@@ -37,7 +37,7 @@ def background():
     client.message_callback_add('SGLCERIC/sync/add/'+str(util.this_room.id), fp.add)
     client.message_callback_add('SGLCERIC/sync/del/'+str(util.this_room.id), fp.delete)
     client.message_callback_add('SGLCERIC/open', util.door_command)
-    client.message_callback_add('SGLCERIC/pass/'+str(util.this_room.id), util.password_command)
+    client.message_callback_add('SGLCERIC/pass/'+str(util.this_room.id), pincam.password_command)
     client.will_set(topic='SGLCERIC/connection/'+str(util.this_room.id), payload='Device Lost Connection', qos=1, retain=True )
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
@@ -84,7 +84,7 @@ def touchpad_sensor():
     logging.debug('touchpad thread start')
     while True:
         try:
-            pincam.password_auth(int(input()))
+            pincam.password_auth(int(input('pin:')))
         except Exception as e:
             print(e)
 

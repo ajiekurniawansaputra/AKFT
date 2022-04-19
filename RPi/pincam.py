@@ -9,14 +9,18 @@ import base64
         
 def password_command(client, userdata, msg):
     try:
+        logging.debug('Changing room password')
         util.this_room.password=msg.payload
+        logging.debug('Changed')
     except Exception as e:
         logging.error(e)
         return
 
 def password_auth(pin):
+    logging.debug('decrypt password')
     msg, _ = util.receive_mqtt_decrypt(util.this_room.password)
-    password = msg['password']
+    password = int(msg['password'])
+    logging.debug(f'the password is {password}')
     if pin == password:
         logging.debug('pin true')
     else:
