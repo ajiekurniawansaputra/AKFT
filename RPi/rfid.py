@@ -26,12 +26,12 @@ class RFID():
         uid = "".join(buffer[0][2:])
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
-        #consider adding sensor to the topic instead
+        date = str(datetime.datetime.now().replace(microsecond=0))[2:]
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
-            {'date':str(datetime.datetime.now().replace(microsecond=0))[2:],
+            {'date':date,
             'roomId':util.this_room.id,
             'data':uid})
-        #pincam.take_photo()
+        pincam.take_photo(date)
         self.wait_for_response()
         logging.debug('Wait to be released')
         subprocess.check_output("/usr/bin/nfc-poll", stderr=open('/dev/null','w'))

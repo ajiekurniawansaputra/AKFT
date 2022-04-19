@@ -58,6 +58,20 @@ def auth_rfid(client, userdata, msg):
     except Exception as e:
             logging.error(e)
 
+def save_img(client, userdata, msg):
+    """ This callback save image to the database"""
+    try:
+        logging.debug('Receiving image data')
+        msg, data = receive_mqtt_decrypt(msg.payload)
+        date = msg['date']
+        img = data['img']
+        logging.debug(date)
+        date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
+        db_ack = image_db.insert_one({'date':date, 'img':img})
+        logging.debug(f'inserted id {db_ack.inserted_id}')
+    except Exception as e:
+            logging.error(e)
+
 def sign_up(client, userdata, msg):
     """ This callback will save uid and model to database"""
     try:
@@ -223,7 +237,8 @@ def open_db():
     user_db = main_db["user"]
     room_db = main_db["room"]
     log_db = main_db["log"]
-    return user_db, room_db, log_db
+    image_db = main_db["image"]
+    return user_db, room_db, log_db, image_db
 
 """
 MQTT UTILS CALLBACK. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
@@ -264,7 +279,7 @@ if __name__ == "__main__":
     while True:
         try:
             private_key, public_key = open_key()
-            user_db, room_db, log_db = open_db()
+            user_db, room_db, log_db, image_db = open_db()
             client = mqtt.Client(protocol=mqtt.MQTTv311)
             main(debug = True)
         except Exception as e:

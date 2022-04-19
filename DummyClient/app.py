@@ -26,7 +26,8 @@ def home():
     try:
         if request.method == 'GET':
             logs_data = log_db.find({},{ "_id": 0}).limit(5).sort('date', -1)
-            return render_template("index.html", logs_data=logs_data)
+            images_data = image_db.find({},{ "_id": 0}).limit(5).sort('date', -1) #.sort({$natural: -1})
+            return render_template("index.html", logs_data=logs_data, images_data=images_data)
     except Exception as e:
         logging.error(e)
 
@@ -232,7 +233,8 @@ def open_db():
     user_db = main_db["user"]
     room_db = main_db["room"]
     log_db = main_db["log"]
-    return user_db, room_db, log_db
+    image_db = main_db["image"]
+    return user_db, room_db, log_db, image_db
 
 def add_list_func(room_id, add_user_list, unit=False):
     logging.debug('get old user list')
@@ -312,7 +314,7 @@ def main(debug=False):
 
 if __name__ == '__main__':
     _, public_key = open_key()
-    user_db, room_db, log_db = open_db()
-    client = mqtt.Client(protocol=mqtt.MQTTv311) 
+    user_db, room_db, log_db, image_db = open_db()
+    client = mqtt.Client(protocol=mqtt.MQTTv311)
     main(debug=True)
     app.run(host="0.0.0.0", port=5000, use_reloader=False)

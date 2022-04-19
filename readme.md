@@ -123,3 +123,13 @@ triggered when an 'add' command was succesfully proceed.
     'data':{None}
     }
 ```
+
+### 7. 'SGLCERIC/img'
+triggered when an authentication is attempted.
+```
+{
+    'msg':{'date':str(date)},
+    'data':{'img':img}
+    }
+```
+curently image is encoded as string with utf-8
