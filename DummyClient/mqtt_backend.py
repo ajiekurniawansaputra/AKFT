@@ -64,6 +64,8 @@ def save_img(client, userdata, msg):
         msg, data = receive_mqtt_decrypt(msg.payload)
         date = msg['date']
         img = data['img']
+        img = base64.b64decode(img)
+        img = base64.b64encode(img)
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         db_ack = image_db.insert_one({'date':date, 'img':img})
@@ -251,6 +253,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe('SGLCERIC/sync/re')
     client.subscribe('SGLCERIC/sync/del/ack')
     client.subscribe('SGLCERIC/sync/add/ack')
+    client.subscribe('SGLCERIC/img')
 
 """
 MAIN. APP MQTT. SGLCERIC. CAPSTONE. ####################################################################
@@ -269,6 +272,7 @@ def main(debug = False):
     client.message_callback_add('SGLCERIC/sync/re', resync)
     client.message_callback_add('SGLCERIC/sync/del/ack', ack_del)
     client.message_callback_add('SGLCERIC/sync/add/ack', ack_add)
+    client.message_callback_add('SGLCERIC/img', save_img)
 
     client.on_connect= on_connect
     client.connect("broker.hivemq.com", 1883, 8000)

@@ -27,7 +27,12 @@ def home():
         if request.method == 'GET':
             logs_data = log_db.find({},{ "_id": 0}).limit(5).sort('date', -1)
             images_data = image_db.find({},{ "_id": 0}).limit(5).sort('date', -1) #.sort({$natural: -1})
-            return render_template("index.html", logs_data=logs_data, images_data=images_data)
+            imgs_data = []
+            for image in images_data:
+                img = image['img']
+                img = img.decode()
+                imgs_data.append(img)
+            return render_template("index.html", logs_data=logs_data, imgs_data=imgs_data)
     except Exception as e:
         logging.error(e)
 
