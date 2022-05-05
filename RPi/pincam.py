@@ -6,7 +6,16 @@ import threading
 import os
 import logging
 import base64
-        
+import time
+import board
+import busio
+import adafruit_mpr121
+
+i2c = busio.I2C(board.SCL, board.SDA)
+mpr121 = adafruit_mpr121.MPR121(i2c)
+key_map = {'0':-2, '1':7, '2':4, '3':1, '4':0, '5':8,
+           '6':5, '7':2, '8':-1, '9':9, '10':6, '11':3}
+
 def password_command(client, userdata, msg):
     try:
         logging.debug('Changing room password')
@@ -15,6 +24,44 @@ def password_command(client, userdata, msg):
     except Exception as e:
         logging.error(e)
         return
+
+def _bouncing(i):
+    while mpr121[i].value:
+        pass
+        
+def _process_key(input_key, i):
+    if key_map[str(i)] == -1:
+        _bouncing(i)
+        print("Input {} touched!".format(key_map[str(i)]))
+        raise
+    elif key_map[str(i)] == -2:
+        _bouncing(i)
+        print("Input {} touched!".format(key_map[str(i)]))
+    else:
+        _bouncing(i)
+        input_key.append(key_map[str(i)])
+        print("Input {} touched!".format(key_map[str(i)]))
+    return input_key
+
+def read_keypad():
+    try:
+        input_key = []
+        start_key_timer = time.time()
+        while (len(input_key)<6)and((time.time()-start_key_timer)<5):
+            for i in range(12):
+                if mpr121[i].value:
+                    input_key = _process_key(input_key, i)
+                    start_key_timer = time.time()
+                if (len(input_key))==0:
+                    start_key_timer = time.time()
+        if len(input_key)<6:
+            print("timeout")
+        else:
+            print(input_key)
+        #password_auth(input_key)
+    except Exception as e:
+        print("tombol clear", e)
+        pass
 
 def password_auth(pin):
     logging.debug('decrypt password')
