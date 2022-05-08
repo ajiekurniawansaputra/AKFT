@@ -64,6 +64,22 @@ def auth_rfid(client, userdata, msg):
     except Exception as e:
             logging.error(e)
 
+def auth_pin(client, userdata, msg):
+    """ This callback receive authentication result from keypad to be saved in database"""
+    try:
+        logging.debug('Receiving keypad data')
+        msg, _ = receive_mqtt_decrypt(msg.payload)
+        date = msg['date']
+        logging.debug(date)
+        date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
+        room_id = msg['room_id']
+        result = msg['result']
+        logging.debug(f'Saving data room id {room_id} to database')
+        log_db.insert_one({'result':result,'room_id':room_id,
+                'date':date,'sensor':'pin'})
+    except Exception as e:
+            logging.error(e)
+
 def save_img(client, userdata, msg):
     """ This callback save image to the database"""
     try:
@@ -256,6 +272,7 @@ def on_connect(client, userdata, flags, rc):
     client.connected_flag=True
     client.subscribe('SGLCERIC/auth/fp')
     client.subscribe('SGLCERIC/auth/rfid')
+    client.subscribe('SGLCERIC/auth/pin')
     client.subscribe('SGLCERIC/enro/model')
     client.subscribe('SGLCERIC/sync/re')
     client.subscribe('SGLCERIC/sync/del/ack')
@@ -275,6 +292,7 @@ def main(debug = False):
 
     client.message_callback_add('SGLCERIC/auth/fp', auth_fp)
     client.message_callback_add('SGLCERIC/auth/rfid', auth_rfid)
+    client.message_callback_add('SGLCERIC/auth/pin', auth_pin)
     client.message_callback_add('SGLCERIC/enro/model', sign_up)
     client.message_callback_add('SGLCERIC/sync/re', resync)
     client.message_callback_add('SGLCERIC/sync/del/ack', ack_del)
