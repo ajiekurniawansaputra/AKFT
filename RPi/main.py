@@ -84,7 +84,8 @@ def touchpad_sensor():
     logging.debug('touchpad thread start')
     while True:
         try:
-            pincam.password_auth(int(input('pin:')))
+            #pincam.password_auth(int(input('pin:')))
+            pincam.read_keypad()
         except Exception as e:
             print(e)
 
