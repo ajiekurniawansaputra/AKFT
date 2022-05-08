@@ -4,6 +4,7 @@ OTHER FUNCTIONS. SGLCERIC. CAPSTONE.
 import paho.mqtt.client as mqtt
 import json
 import base64
+import motor
 from pygame import mixer
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -72,9 +73,11 @@ def door_command(client, userdata, msg):
     if msg['state'] == True:
         open_door()
     else:
+        motor.start_motor_tread(True)
         print("tok tok e pintune tutup")
 
 def open_door():
+    motor.start_motor_tread(False)
     print("tok tok e pintune dibuka")
     
 this_room = Room()
