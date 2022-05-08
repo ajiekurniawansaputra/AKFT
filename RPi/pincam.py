@@ -10,11 +10,13 @@ import time
 import board
 import busio
 import adafruit_mpr121
+import datetime
+import pincam
 
 i2c = busio.I2C(board.SCL, board.SDA)
 mpr121 = adafruit_mpr121.MPR121(i2c)
-key_map = {'0':-2, '1':7, '2':4, '3':1, '4':0, '5':8,
-           '6':5, '7':2, '8':-1, '9':9, '10':6, '11':3}
+key_map = {'0':'-2', '1':'7', '2':'4', '3':'1', '4':'0', '5':'8',
+           '6':'5', '7':'2', '8':'-1', '9':'9', '10':'6', '11':'3'}
 
 def password_command(client, userdata, msg):
     try:
@@ -30,11 +32,11 @@ def _bouncing(i):
         pass
         
 def _process_key(input_key, i):
-    if key_map[str(i)] == -1:
+    if key_map[str(i)] == '-1':
         _bouncing(i)
         print("Input {} touched!".format(key_map[str(i)]))
         raise
-    elif key_map[str(i)] == -2:
+    elif key_map[str(i)] == '-2':
         _bouncing(i)
         print("Input {} touched!".format(key_map[str(i)]))
     else:
@@ -57,8 +59,9 @@ def read_keypad():
         if len(input_key)<6:
             print("timeout")
         else:
-            print(input_key)
-        #password_auth(input_key)
+            input_key = ''.join(input_key)
+            print(input_key,type(input_key))
+            password_auth(int(input_key))
     except Exception as e:
         print("tombol clear", e)
         pass
@@ -67,11 +70,25 @@ def password_auth(pin):
     logging.debug('decrypt password')
     msg, _ = util.receive_mqtt_decrypt(util.this_room.password)
     password = int(msg['password'])
-    logging.debug(f'the password is {password}')
+    date = str(datetime.datetime.now().replace(microsecond=0))[2:]
+    pincam.take_photo(date)
     if pin == password:
         logging.debug('pin true')
+        util.open_door()
+        #util.play_sound('Fingerprint match.mp3')
+        logging.debug('Send Payload')
+        util.send_mqtt_encrypt('SGLCERIC/auth/pin',
+            {'date':date,
+            'room_id':util.this_room.id,
+            'result': True})
     else:
         logging.debug('pin false')        
+        #util.play_sound('Fingerprint match.mp3')
+        logging.debug('Send Payload')
+        util.send_mqtt_encrypt('SGLCERIC/auth/pin',
+            {'date':date,
+            'room_id':util.this_room.id,
+            'result': False})
 
 def take_photo(date):
     logging.debug('starting camera thread')
