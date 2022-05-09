@@ -4,13 +4,16 @@ OTHER FUNCTIONS. SGLCERIC. CAPSTONE.
 import paho.mqtt.client as mqtt
 import json
 import base64
-import motor
 from pygame import mixer
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.fernet import Fernet
+import RPi.GPIO as gpio
+import time
+import logging
+import threading
 
 class Room:
     def __init__ (self):
@@ -73,14 +76,44 @@ def door_command(client, userdata, msg):
     if msg['state'] == True:
         open_door()
     else:
-        motor.start_motor_tread(True)
+        start_motor_tread(True)
         print("tok tok e pintune tutup")
 
 def open_door():
-    motor.start_motor_tread(False)
+    start_motor_tread(False)
     print("tok tok e pintune dibuka")
-    
+
+def start_motor_tread(state):
+    logging.debug('starting motor thread')
+    motor_thread = threading.Thread(name='change_lock', target=change_lock, args=(state,))
+    motor_thread.start()
+    logging.debug('motor thread finished')
+
+def change_lock(state):
+    try:
+        p.start(0) #Initialization
+        start_time = time.time()
+        while (time.time()-start_time<3):
+            if state:
+                #lock
+                p.ChangeDutyCycle(11)
+            else:
+                #open
+                p.ChangeDutyCycle(2)
+            time.sleep(0.5)
+            p.ChangeDutyCycle(0)
+            time.sleep(2)
+        p.stop()
+        gpio.cleanup()
+        print("done")
+    except:
+        p.stop()
+        gpio.cleanup()
+
 this_room = Room()
+gpio.setmode(gpio.BCM)
+gpio.setup(12, gpio.OUT)
+p = gpio.PWM(12, 50)
 client = mqtt.Client(protocol=mqtt.MQTTv311)
 with open("server_public_key.pem", "rb") as key_file:  #server public key
     public_key = serialization.load_pem_public_key(
@@ -91,3 +124,4 @@ with open("sensor_private_key.pem", "rb") as key_file: #rpi private key
         key_file.read(),
         password=None,
         backend=default_backend())
+#change_lock()
