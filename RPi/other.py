@@ -84,36 +84,43 @@ def open_door():
     print("tok tok e pintune dibuka")
 
 def start_motor_tread(state):
-    logging.debug('starting motor thread')
+    print('starting motor thread')
     motor_thread = threading.Thread(name='change_lock', target=change_lock, args=(state,))
     motor_thread.start()
-    logging.debug('motor thread finished')
+    print('motor thread finished')
 
 def change_lock(state):
     try:
+        gpio.setmode(gpio.BCM)
+        gpio.setup(12, gpio.OUT)
+        gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
+        p = gpio.PWM(12, 50)
         p.start(0) #Initialization
         start_time = time.time()
         while (time.time()-start_time<3):
             if state:
                 #lock
-                p.ChangeDutyCycle(11)
+                p.ChangeDutyCycle(12.5)
             else:
                 #open
                 p.ChangeDutyCycle(2)
+                time.sleep(0.5)
+                p.ChangeDutyCycle(0)
+                time.sleep(3)
+                p.ChangeDutyCycle(12.5)
             time.sleep(0.5)
             p.ChangeDutyCycle(0)
             time.sleep(2)
         p.stop()
         gpio.cleanup()
+        gpio.setmode(gpio.BCM)
+        gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
         print("done")
     except:
         p.stop()
-        gpio.cleanup()
+        #gpio.cleanup()
 
 this_room = Room()
-gpio.setmode(gpio.BCM)
-gpio.setup(12, gpio.OUT)
-p = gpio.PWM(12, 50)
 client = mqtt.Client(protocol=mqtt.MQTTv311)
 with open("server_public_key.pem", "rb") as key_file:  #server public key
     public_key = serialization.load_pem_public_key(
@@ -124,4 +131,4 @@ with open("sensor_private_key.pem", "rb") as key_file: #rpi private key
         key_file.read(),
         password=None,
         backend=default_backend())
-#change_lock()
+#start_motor_tread(False)
