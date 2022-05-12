@@ -64,12 +64,13 @@ def receive_mqtt_decrypt(msg):
     return msg, data
 
 #check for diferent cases
-def play_sound(file):
+def play_sound(file, wait_for_finnish=True):
     mixer.init()
     mixer.music.load('sound/'+file)
     mixer.music.play()
-    while mixer.music.get_busy()==True:
-        continue
+    if wait_for_finnish:
+        while mixer.music.get_busy()==True:
+            continue
 
 def door_command(client, userdata, msg):
     msg, _ = receive_mqtt_decrypt(msg.payload)

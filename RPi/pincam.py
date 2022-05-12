@@ -35,6 +35,7 @@ def _process_key(input_key, i):
     if key_map[str(i)] == '-1':
         _bouncing(i)
         print("Input {} touched!".format(key_map[str(i)]))
+        util.play_sound('tbl clr.mp3', wait_for_finnish=False)
         raise
     elif key_map[str(i)] == '-2':
         _bouncing(i)
@@ -42,6 +43,7 @@ def _process_key(input_key, i):
     else:
         _bouncing(i)
         input_key.append(key_map[str(i)])
+        util.play_sound('tbl pin.mp3', wait_for_finnish=False)
         print("Input {} touched!".format(key_map[str(i)]))
     return input_key
 
@@ -58,6 +60,7 @@ def read_keypad():
                     start_key_timer = time.time()
         if len(input_key)<6:
             print("timeout")
+            util.play_sound('Timeout.mp3')
         else:
             input_key = ''.join(input_key)
             print(input_key,type(input_key))
@@ -75,7 +78,7 @@ def password_auth(pin):
     if pin == password:
         logging.debug('pin true')
         util.start_motor_tread(False)
-        #util.play_sound('Fingerprint match.mp3')
+        util.play_sound('Pin Match.mp3')
         logging.debug('Send Payload')
         util.send_mqtt_encrypt('SGLCERIC/auth/pin',
             {'date':date,
@@ -83,7 +86,7 @@ def password_auth(pin):
             'result': True})
     else:
         logging.debug('pin false')        
-        #util.play_sound('Fingerprint match.mp3')
+        util.play_sound('Pin not Match.mp3')
         logging.debug('Send Payload')
         util.send_mqtt_encrypt('SGLCERIC/auth/pin',
             {'date':date,
