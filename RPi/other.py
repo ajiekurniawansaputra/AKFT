@@ -86,7 +86,7 @@ def open_door():
 
 def start_motor_tread(state):
     print('starting motor thread')
-    motor_thread = threading.Thread(name='change_lock', target=change_lock, args=(state,))
+    motor_thread = threading.Thread(name='change_lock_local', target=change_lock_local, args=(state,))
     motor_thread.start()
     print('motor thread finished')
 
@@ -95,6 +95,7 @@ def change_lock(state):
         gpio.setmode(gpio.BCM)
         gpio.setup(12, gpio.OUT)
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup (4, gpio.IN, pull_up_down=gpio.PUD_UP)
         p = gpio.PWM(12, 50)
         p.start(0) #Initialization
         start_time = time.time()
@@ -105,10 +106,6 @@ def change_lock(state):
             else:
                 #open
                 p.ChangeDutyCycle(2)
-                time.sleep(0.5)
-                p.ChangeDutyCycle(0)
-                time.sleep(3)
-                p.ChangeDutyCycle(12.5)
             time.sleep(0.5)
             p.ChangeDutyCycle(0)
             time.sleep(2)
@@ -116,11 +113,55 @@ def change_lock(state):
         gpio.cleanup()
         gpio.setmode(gpio.BCM)
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
-        print("done")
+        print("donehfht")
+    except Exception as e:
+        print(e)#p.stop()
+        #gpio.cleanup()
+
+def change_lock_local(state):
+    try:
+        print("inside change lock")
+        gpio.setmode(gpio.BCM)
+        gpio.setup(12, gpio.OUT)
+        gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
+        gpio.setup (4, gpio.IN, pull_up_down=gpio.PUD_UP)
+        p = gpio.PWM(12, 50)
+        p.start(0) #Initialization
+        while True:
+            p.ChangeDutyCycle(2)
+            print("open door")
+            time.sleep(0.5)
+            p.ChangeDutyCycle(0)
+            door_timeout = time.time()#time.sleep(3)
+            print("wait to open or 5s")
+            while gpio.input(4)==0 and (time.time()-door_timeout<5):
+                pass
+            if gpio.input(4)==0:
+                print("timeout")
+                p.ChangeDutyCycle(12.5)
+                start_time = time.time()
+                while (time.time()-start_time<2):
+                    pass
+                break
+            else:
+                print("wait to close")
+                while gpio.input(4)==1:
+                    pass
+                print("closeed")
+                p.ChangeDutyCycle(12.5)
+                start_time = time.time()
+                while (time.time()-start_time<2):
+                    pass
+                break
+        p.stop()
+        gpio.cleanup()
+        gpio.setmode(gpio.BCM)
+        gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
+        print("doooone")
     except:
         p.stop()
         #gpio.cleanup()
-
+        
 this_room = Room()
 client = mqtt.Client(protocol=mqtt.MQTTv311)
 with open("server_public_key.pem", "rb") as key_file:  #server public key
