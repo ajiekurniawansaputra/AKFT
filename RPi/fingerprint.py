@@ -63,12 +63,11 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 'room_id':util.this_room.id,
                 'result': True})
         elif ack_packet == 9:
+            util.play_sound('Fingerprint match.mp3')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
                 {'date':date,
                 'room_id':util.this_room.id,
                 'result': False})
-            logging.debug('Fingerprint is rejected. Try another method')
-            util.play_sound("Sorry, the room is restricted. you're not allowed to enter.mp3")
         else:
             raise Exception
                 

@@ -50,7 +50,7 @@ class RFID():
             util.play_sound('RFID Match.mp3')
         elif msg['result'] == False:
             logging.debug('rfid not Match')
-            util.play_sound('Sorry. Please try again.mp3') #restricted or not registered
+            util.play_sound('RFID not Match.mp3') #restricted or not registered
         return
         #else:
         #    logging.debug('Unexpected message coming in, neglect the message')
