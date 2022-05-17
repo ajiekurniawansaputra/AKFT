@@ -153,13 +153,16 @@ def change_lock_local(state):
                 while (time.time()-start_time<2):
                     pass
                 break
+        print("cleaning gpio")
         p.stop()
         gpio.cleanup()
         gpio.setmode(gpio.BCM)
+        print("doooone c;eaning up")
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
         print("doooone")
-    except:
-        p.stop()
+    except Exception as e:
+        print(e)
+        #p.stop()
         #gpio.cleanup()
         
 this_room = Room()

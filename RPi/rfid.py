@@ -45,8 +45,8 @@ class RFID():
         msg, _ = util.receive_mqtt_decrypt(msg.payload)
         self.busy = False
         if msg['result'] == True:
-            util.open_door()
             logging.debug('rfid Match')
+            util.start_motor_tread(False)
             util.play_sound('RFID Match.mp3')
         elif msg['result'] == False:
             logging.debug('rfid not Match')

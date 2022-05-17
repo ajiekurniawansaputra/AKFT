@@ -53,7 +53,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
         pincam.take_photo(date)
         if ack_packet == 0:
-            util.open_door()
+            util.start_motor_tread(False)
             logging.debug(f'Fingerprint Match {self.finger_id}')
             util.play_sound('Fingerprint match.mp3')
             logging.debug('Send Payload')

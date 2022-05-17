@@ -68,7 +68,8 @@ def on_message_command_enroll(client, userdata, msg):
         model = create_model()
     util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking RFID')
     while(uid is None):
-        uid = create_uid()
+        guid = create_uid()
+        #uid='12345'
     util.send_mqtt_encrypt("SGLCERIC/enro/model",
         {'user_id':user_id, 'uid':uid},
         {'model':model})

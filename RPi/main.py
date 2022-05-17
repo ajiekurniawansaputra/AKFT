@@ -25,17 +25,17 @@ def main(debug=False):
     
     #start thread
     background_thread.start()
-    #fingerprint_thread.start()
-    #rfid_thread.start()
+    fingerprint_thread.start()
+    rfid_thread.start()
     pin_thread.start()
     
 #add error handling to background
 def background():
     logging.debug('Background thread start')
     client = util.client
-    #client.message_callback_add('SGLCERIC/auth/rfid/'+str(util.this_room.id), nfc.response)
-    #client.message_callback_add('SGLCERIC/sync/add/'+str(util.this_room.id), fp.add)
-    #client.message_callback_add('SGLCERIC/sync/del/'+str(util.this_room.id), fp.delete)
+    client.message_callback_add('SGLCERIC/auth/rfid/'+str(util.this_room.id), nfc.response)
+    client.message_callback_add('SGLCERIC/sync/add/'+str(util.this_room.id), fp.add)
+    client.message_callback_add('SGLCERIC/sync/del/'+str(util.this_room.id), fp.delete)
     client.message_callback_add('SGLCERIC/open', util.door_command)
     client.message_callback_add('SGLCERIC/pass/'+str(util.this_room.id), pincam.password_command)
     client.will_set(topic='SGLCERIC/connection/'+str(util.this_room.id), payload='Device Lost Connection', qos=1, retain=True )
@@ -90,6 +90,6 @@ def touchpad_sensor():
             print(e)
 
 if __name__ == "__main__":
-    #fp = fingerprint.FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
-    #nfc = rfid.RFID()
+    fp = fingerprint.FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
+    nfc = rfid.RFID()
     main(debug=True)
