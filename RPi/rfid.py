@@ -26,12 +26,14 @@ class RFID():
         uid = "".join(buffer[0][2:])
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
+        random = 123
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
             {'date':date,
             'roomId':util.this_room.id,
-            'data':uid})
-        pincam.take_photo(date)
+            'data':uid,
+            'img_key':random})
+        pincam.take_photo(date, random)
         self.wait_for_response()
         logging.debug('Wait to be released')
         subprocess.check_output("/usr/bin/nfc-poll", stderr=open('/dev/null','w'))
@@ -40,20 +42,20 @@ class RFID():
 
     def response(self, client, userdata, msg):
         #only respond when rfid is expect the message, for when server respons late
-        #if self.busy == True:
-        logging.debug('Read nfc response')
-        msg, _ = util.receive_mqtt_decrypt(msg.payload)
-        self.busy = False
-        if msg['result'] == True:
-            logging.debug('rfid Match')
-            util.start_motor_tread(False)
-            util.play_sound('RFID Match.mp3')
-        elif msg['result'] == False:
-            logging.debug('rfid not Match')
-            util.play_sound('RFID not Match.mp3') #restricted or not registered
-        return
-        #else:
-        #    logging.debug('Unexpected message coming in, neglect the message')
+        if self.busy == True:
+            logging.debug('Read nfc response')
+            msg, _ = util.receive_mqtt_decrypt(msg.payload)
+            self.busy = False
+            if msg['result'] == True:
+                logging.debug('rfid Match')
+                util.start_motor_tread(False)
+                util.play_sound('RFID Match.mp3')
+            elif msg['result'] == False:
+                logging.debug('rfid not Match')
+                util.play_sound('RFID not Match.mp3') #restricted or not registered
+            return
+        else:
+            logging.debug('Unexpected message coming in, neglect the message')
         
     def wait_for_response(self):
         logging.debug('wait for response')

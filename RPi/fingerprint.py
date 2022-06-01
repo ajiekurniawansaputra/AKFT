@@ -12,6 +12,7 @@ import datetime
 import time
 
 class FP(adafruit_fingerprint.Adafruit_Fingerprint):
+    """Extend adafruit library"""
     GPIO.setmode(GPIO.BCM)
     GPIO.setup (18, GPIO.IN, pull_up_down=GPIO.PUD_UP)
     
@@ -51,8 +52,9 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     def action(self, ack_packet):
         logging.debug(f'ack code: {ack_packet}')
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-        pincam.take_photo(date)
-        if ack_packet == 0:
+        random = 123
+        pincam.take_photo(date, random)
+        if ack_packet == 0:    
             util.start_motor_tread(False)
             logging.debug(f'Fingerprint Match {self.finger_id}')
             util.play_sound('Fingerprint match.mp3')
@@ -61,13 +63,15 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 {'date':date,
                 'user_id':self.finger_id,
                 'room_id':util.this_room.id,
-                'result': True})
+                'result': True,
+                'img_key':random})
         elif ack_packet == 9:
             util.play_sound('Fingerprint match.mp3')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
                 {'date':date,
                 'room_id':util.this_room.id,
-                'result': False})
+                'result': False,
+                'img_key':random})
         else:
             raise Exception
                 

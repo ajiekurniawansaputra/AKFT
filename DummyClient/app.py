@@ -26,6 +26,7 @@ def home():
     try:
         if request.method == 'GET':
             logs_data = log_db.find({},{ "_id": 0}).limit(5).sort('date', -1)
+            logging.debug(type(logs_data[1]['result']))
             images_data = image_db.find({},{ "_id": 0}).limit(5).sort('date', -1) #.sort({$natural: -1})
             imgs_data = []
             for image in images_data:
@@ -36,9 +37,17 @@ def home():
     except Exception as e:
         logging.error(e)
 
+@app.route('/user/enroll',methods=['GET'])
+def enroll():
+    """ This url show form for adding a new user"""
+    return render_template("enroll.html")
+
 @app.route('/users',methods=['POST','GET'])
 def users():
-    """ This url show all user and add new one"""
+    """ 
+    GET: This url show all user
+    POST: add a new user
+    """
     try:
         if request.method == 'GET':
             users_data = user_db.find({},{ "_id": 1,'name':1})
@@ -61,7 +70,10 @@ def users():
 
 @app.route('/user/<string:request_method>/<int:user_id>')
 def user(request_method, user_id):
-    """ This url show a user and delete one"""
+    """ 
+    /details/: This url show a user
+    /delete/: delete a user
+    """
     try:
         if request_method == 'details': #get
             message = request.args.get('message')
@@ -69,7 +81,6 @@ def user(request_method, user_id):
             room_list = room_db.find({'user_list_ack':{'$in':[user_id]}}, {'_id':1,'name':1})
             room_list_nin = room_db.find({'user_list_ack':{'$nin':[user_id]}}, {'_id':1,'name':1})
             user_data = user_db.find_one({'_id':user_id})
-            logging.debug('render the page')
             return render_template("user.html", user_data=user_data, room_list=room_list, room_list_nin=room_list_nin, message=message)
         elif request_method == 'delete': #delete
             ack_message = user_db.delete_one({'_id':user_id})
@@ -90,7 +101,9 @@ def rooms(message=None):
 
 @app.route('/room/<string:request_method>/<int:room_id>') #should use delete method, but not suported in html, too lazy for ajax
 def room(request_method, room_id):
-    """ This url show a room and delete one"""
+    """
+    /details/: This url show a room details
+    /delete/: delete a room"""
     try:
         if request_method == 'details': #get
             message = request.args.get('message')
@@ -104,14 +117,14 @@ def room(request_method, room_id):
     except Exception as e:
         logging.error(e)
 
-@app.route('/user/enroll',methods=['GET'])
-def enroll():
-    """ This url show form for new user"""
-    return render_template("enroll.html")
-
 @app.route('/user/sync',methods=['POST','GET'])
 def sync():
-    """ This url edit user list in a room, send resync command"""
+    """ 
+    add: This url add a list of user to the user_list in a room
+    del: This url del a list of user from the user_list in a room
+    sync_command: send a delete command and add command
+    resync_command: send a reset command and add all comand
+    """
     try:
         if request.method == 'POST':
             button = request.form['button']
@@ -147,7 +160,10 @@ def sync():
 
 @app.route('/editlist/<string:mode>')
 def editlist(mode):
-    """ This url for add or delete allowed list and send command to add or delete fp model"""
+    """ 
+    add: This url is to add a user to the allowed list of a room and send command to add
+    add: This url is to delete a user on the allowed list and send command to delete it
+    """
     try:
         if mode == 'add':
             logging.debug('adding user to room')
@@ -181,7 +197,7 @@ def editlist(mode):
 
 @app.route('/opendoor/<string:state>')
 def opendoor(state):
-    """ This url send command to open all dor in an emergency, or close when anything is get back to normal"""
+    """This url send command to open all dor in an emergency, or close when anything is get back to normal"""
     try:
         if state == 'true':
             send_mqtt_encrypt('SGLCERIC/open',{'state':True})
@@ -193,7 +209,7 @@ def opendoor(state):
 
 @app.route('/pass',methods=['POST','GET'])
 def password_set():
-    """ This url send command to open all dor in an emergency, or close when anything is get back to normal"""
+    """ This url change password of a room"""
     try:
         if request.method == 'POST':
             room_id = request.form['room_id']
@@ -254,23 +270,25 @@ def open_db():
 
 def add_list_func(room_id, add_user_list, unit=False):
     logging.debug('get old user list')
-    user_data = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1, 'user_list_todel':1})
+    user_data = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1, 'user_list_ack':1, 'user_list_todel':1})
     user_list = user_data['user_list']
+    user_list_ack = user_data['user_list_ack']
     user_list_todel = user_data['user_list_todel']
     logging.debug('processing list')
     for user_id in add_user_list:
         if (user_id in user_list):
             try:
+                logging.warning(f'{user_id} index in user_list is {user_list.index(user_id)+1}')
                 user_list_todel.remove(user_list.index(user_id)+1)
-                logging.warning(f'{user_id} deleted from todel list with the value {user_list.index(user_id)}')
+                logging.warning(f'{user_id} deleted from todel list')
             except:
-                logging.warning(f'{user_id} not in todel list with the value {user_list.index(user_id)}')
-            logging.warning(f'{user_id} already in the list')
+                logging.warning(f'{user_id} not in todel list')
+            logging.warning(f'{user_id} already in the ack list')
         else:
             try:
                 user_list[user_list.index(None)]=user_id
                 logging.debug(f'{user_id} added')
-            except: 
+            except:
                 logging.warning('room is full')    
     logging.debug('updating list')
     room_db.find_one_and_update({'_id':room_id},{'$set':{"user_list":user_list}},{})
@@ -278,9 +296,10 @@ def add_list_func(room_id, add_user_list, unit=False):
     logging.debug('list updated')
     if unit:
         logging.debug(f'Get {user_id} location')
-        location = user_list.index(user_id)
+        location = user_list.index(user_id)+1
+        logging.debug(f'The user {user_id} is in location {location} in the sensor')
         return location
-    return            
+    return
 
 def remove_list_func(room_id, remove_user_list, unit=False):
     logging.debug('get old user list')
@@ -298,10 +317,10 @@ def remove_list_func(room_id, remove_user_list, unit=False):
                 logging.warning(f'{user_id} is not in userlist nor userlistack')
             logging.debug(f'deleted')
         else:
-            if user_id not in user_list_todel:
+            if (user_list_ack.index(user_id)+1) not in user_list_todel:
                 try:
-                    user_list_todel.append(user_list.index(user_id)+1)
-                    logging.debug(f'{user_id} added to todel list')
+                    user_list_todel.append(user_list_ack.index(user_id)+1)
+                    logging.debug(f'{user_id} added to todel list as {user_list_ack.index(user_id)+1}')
                 except:
                     logging.warning(f'adding todel list error')
             else:
@@ -333,4 +352,4 @@ if __name__ == '__main__':
     user_db, room_db, log_db, image_db = open_db()
     client = mqtt.Client(protocol=mqtt.MQTTv311)
     main(debug=True)
-    app.run(host="0.0.0.0", port=5000, use_reloader=False)
+    app.run(host="0.0.0.0", port=5000, use_reloader=True)

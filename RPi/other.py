@@ -16,11 +16,13 @@ import logging
 import threading
 
 class Room:
+    """ Class that hold room data"""
     def __init__ (self):
         self.id = 6
         self.password = None
 
 def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
+    """function to send encrypt data and then send them with mqtt"""
     if data!=None:
         data = json.dumps(data).encode('utf-8')             #dict to byte
         key = Fernet.generate_key()
@@ -43,6 +45,7 @@ def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
     client.publish(topic=topic, payload=json.dumps({'msg':msg,'data':data}), qos=qos, retain=retain)
 
 def receive_mqtt_decrypt(msg):
+    """function to receive mqtt message and decrypt its data"""
     msg = json.loads(msg)
     data = msg['data']
     msg = msg['msg']
@@ -63,8 +66,8 @@ def receive_mqtt_decrypt(msg):
         data = json.loads(data.decode('utf-8'))             #byte to dict
     return msg, data
 
-#check for diferent cases
 def play_sound(file, wait_for_finnish=True):
+    """play a sound from a stated directory file"""
     mixer.init()
     mixer.music.load('sound/'+file)
     mixer.music.play()
@@ -73,52 +76,22 @@ def play_sound(file, wait_for_finnish=True):
             continue
 
 def door_command(client, userdata, msg):
+    """callback for a command to open all rooms or close all room"""
     msg, _ = receive_mqtt_decrypt(msg.payload)
     if msg['state'] == True:
-        open_door()
+        #open
+        start_motor_tread(False)
     else:
+        #close
         start_motor_tread(True)
-        print("tok tok e pintune tutup")
-
-def open_door():
-    start_motor_tread(False)
-    print("tok tok e pintune dibuka")
 
 def start_motor_tread(state):
     print('starting motor thread')
-    motor_thread = threading.Thread(name='change_lock_local', target=change_lock_local, args=(state,))
+    motor_thread = threading.Thread(name='motor_thread_func', target=motor_thread_func, args=(state,))
     motor_thread.start()
     print('motor thread finished')
 
-def change_lock(state):
-    try:
-        gpio.setmode(gpio.BCM)
-        gpio.setup(12, gpio.OUT)
-        gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
-        gpio.setup (4, gpio.IN, pull_up_down=gpio.PUD_UP)
-        p = gpio.PWM(12, 50)
-        p.start(0) #Initialization
-        start_time = time.time()
-        while (time.time()-start_time<3):
-            if state:
-                #lock
-                p.ChangeDutyCycle(12.5)
-            else:
-                #open
-                p.ChangeDutyCycle(2)
-            time.sleep(0.5)
-            p.ChangeDutyCycle(0)
-            time.sleep(2)
-        p.stop()
-        gpio.cleanup()
-        gpio.setmode(gpio.BCM)
-        gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
-        print("donehfht")
-    except Exception as e:
-        print(e)#p.stop()
-        #gpio.cleanup()
-
-def change_lock_local(state):
+def motor_thread_func(state):
     try:
         print("inside change lock")
         gpio.setmode(gpio.BCM)

@@ -4,22 +4,35 @@
 <div class="container">
 <div class="row">
     <div class="col" style="margin-bottom: 10px;">
-        <div class="card text-white bg-dark mb-3" style="width: 100%;">
-            <div class="card-body">
-                {% if message%}
-                <div class="alert alert-danger" role="alert">
-                    {{message}}
-                </div>
-                {% endif %}
-                <h5 class="card-title">New Auth</h5>
-                <ul>
-                    {%for log in logs_data%}
-                    <img src="data:image/png;base64,{{ imgs_data[loop.index0] }}" class="card-img-top" style="width:300px;height:200px;" alt="...">
-                    <li class="nav-item">{{log['result']}} {{log['room_id']}} {{log['user_id']}} {{log['sensor']}} {{log['date']}}</li>
-                    {%endfor%}
-                </ul>
-            </div>
+        {% if message%}
+        <div class="alert alert-danger" role="alert">
+            {{message}}
         </div>
+        {% endif %}
+        <h5 class="text-center text-white">New Auth</h5>
+        <ul>
+            {%for log in logs_data%}
+                <div class="row g-0 bg-dark" style="margin-bottom: 10px;">
+                    <div class="col-md-4 bg-dark">
+                        <img src="data:image/png;base64,{{ imgs_data[loop.index0] }}" class="card-img-top" alt="...">
+                    </div>
+                    <div class="col-md-8 bg-dark">
+                        <ul class="list-group list-group-flush">
+                            {% if log['result']%}
+                                <li class="list-group-item bg-dark text-success">Room id : {{log['room_id']}}</li>
+                                <li class="list-group-item bg-dark text-success">User id : {{log['user_id']}}</li>
+                                <li class="list-group-item bg-dark text-success">Sensor used : {{log['sensor']}}</li>
+                                <li class="list-group-item bg-dark text-success">Datetime : {{log['date']}}</li>
+                            {% else %}
+                                <li class="list-group-item bg-dark text-danger">Room id : {{log['room_id']}}</li>
+                                <li class="list-group-item bg-dark text-danger">Sensor used : {{log['sensor']}}</li>
+                                <li class="list-group-item bg-dark text-danger">Datetime : {{log['date']}}</li>
+                            {% endif %}   
+                        </ul>
+                    </div>
+                </div>
+            {%endfor%}
+        </ul>
     </div>
 </div>
 </div>

@@ -74,7 +74,8 @@ def password_auth(pin):
     msg, _ = util.receive_mqtt_decrypt(util.this_room.password)
     password = int(msg['password'])
     date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-    pincam.take_photo(date)
+    random = 123
+    pincam.take_photo(date, random)
     if pin == password:
         logging.debug('pin true')
         util.start_motor_tread(False)
@@ -83,7 +84,8 @@ def password_auth(pin):
         util.send_mqtt_encrypt('SGLCERIC/auth/pin',
             {'date':date,
             'room_id':util.this_room.id,
-            'result': True})
+            'result': True,
+            'img_key':random})
     else:
         logging.debug('pin false')        
         util.play_sound('Pin not Match.mp3')
@@ -91,15 +93,16 @@ def password_auth(pin):
         util.send_mqtt_encrypt('SGLCERIC/auth/pin',
             {'date':date,
             'room_id':util.this_room.id,
-            'result': False})
+            'result': False,
+            'img_key':random})
 
-def take_photo(date):
+def take_photo(date, random):
     logging.debug('starting camera thread')
-    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(date,))
+    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(date, random))
     take_photo_thread.start()
     logging.debug('camera thread finished')
     
-def shoot(date):
+def shoot(date, random):
     logging.debug('taking a photo')
     os.system('libcamera-still -o img.jpg -t 1000 -n --width 1280 --height 720')
     logging.debug('photo captured')
@@ -109,5 +112,5 @@ def shoot(date):
         img = img.decode('utf-8')
         print(img)
     logging.debug('Sending photo')
-    util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img})
+    util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img}, 'img_key':random)
     logging.debug('Sent')

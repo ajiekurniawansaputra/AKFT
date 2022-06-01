@@ -27,20 +27,24 @@ def auth_fp(client, userdata, msg):
         logging.debug('Receiving fingerprint authentication result')
         msg, _ = receive_mqtt_decrypt(msg.payload)
         date = msg['date']
+        img_key = msg['img_key']
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         room_id = msg['room_id']
         result = msg['result']
         if result:
             user_id = msg['user_id']
+            user_list = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1})['user_list']
+            user_id = user_list[user_id-1]
+            #name = user_db.find_one({'_id':user_id},{'_id':0,'name':1})['name']
             logging.debug(f'Saving data room id {room_id}, user id {user_id} to database')
             log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
-                'date':date,'sensor':'FP'})
+                'date':date,'sensor':'FP', 'img_key':img_key})
             logging.debug('Saved')
         else:
             logging.debug(f'Saving declined auth to database')
             log_db.insert_one({'result':result,'room_id':room_id,
-                'date':date,'sensor':'FP'})
+                'date':date,'sensor':'FP', 'img_key':img_key})
             logging.debug('Saved')
     except Exception as e:
             logging.error(e)
@@ -53,14 +57,26 @@ def auth_rfid(client, userdata, msg):
         date = msg['date']
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
+        img_key = msg['img_key']
         room_id = msg['roomId']
         data = msg['data']
-        user_id = 2222
-        result = random.choice([True, False])
+        try:
+            user_id = user_db.find_one({'RFID':data},{'_id':1})['_id']
+            room_list = room_db.find({'$and':[{'room_id':room_id},{'user_list_ack':{'$in':[user_id]}}]}, {'_id':1,'name':1})
+            logging.debug(room_list)
+            #if room_list:
+            result = True
+            #else: False
+        except:
+            result = False
         send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
-        logging.debug(f'Saving data room id {room_id}, user id {user_id}, data {data} to database')
-        log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
-                'date':date,'sensor':'RFID'})
+        if user_id:
+            logging.debug(f'Saving data room id {room_id}, user id {user_id}')
+            log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
+                'date':date,'sensor':'RFID', 'img_key':img_key})
+        else: 
+            logging.debug(f'Saving data room id {room_id}')
+            log_db.insert_one({'result':result,'room_id':room_id,'date':date,'sensor':'RFID', 'img_key':img_key})
     except Exception as e:
             logging.error(e)
 
@@ -70,13 +86,14 @@ def auth_pin(client, userdata, msg):
         logging.debug('Receiving keypad data')
         msg, _ = receive_mqtt_decrypt(msg.payload)
         date = msg['date']
+        img_key = msg['img_key']
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         room_id = msg['room_id']
         result = msg['result']
         logging.debug(f'Saving data room id {room_id} to database')
         log_db.insert_one({'result':result,'room_id':room_id,
-                'date':date,'sensor':'pin'})
+                'date':date,'sensor':'pin', 'img_key':img_key})
     except Exception as e:
             logging.error(e)
 
@@ -86,12 +103,13 @@ def save_img(client, userdata, msg):
         logging.debug('Receiving image data')
         msg, data = receive_mqtt_decrypt(msg.payload)
         date = msg['date']
+        img_key = msg['img_key']
         img = data['img']
         img = base64.b64decode(img)
         img = base64.b64encode(img)
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
-        db_ack = image_db.insert_one({'date':date, 'img':img})
+        db_ack = image_db.insert_one({'date':date, 'img':img, , 'img_key':img_key})
         logging.debug(f'inserted id {db_ack.inserted_id}')
     except Exception as e:
             logging.error(e)

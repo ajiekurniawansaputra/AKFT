@@ -83,17 +83,19 @@ function sub_topics(){
                                 {% if user%}
                                 {{ increment(counter, 'counter_all') }}
                                     {% if user in room_data['user_list_ack']%}
-                                        {% if loop.index in room_data['user_list_todel']%}
-                                            <li class="nav-item">{{user}} - Saved in the sensor, To be deleted</li>
-                                        {%else%}
-                                            <li class="nav-item">{{user}} - Saved in the sensor</li>
-                                        {% endif %}
+                                        <li class="nav-item">{{user}} - Saved in the sensor</li>
                                     {%else%}
                                         {{ increment(counter, 'counter_tobeadded') }}
-                                        <li class="nav-item">{{user}} - Not in the sensor, To be added</li>
+                                        <li class="nav-item">{{user}} - To be added</li>
                                     {% endif %}
                                 {% endif %}
                             {%endfor%}
+                            {%for user in room_data['user_list_ack']%}    
+                                {% if loop.index in room_data['user_list_todel']%}
+                                    <li class="nav-item">{{user}} - To be deleted</li>
+                                {%endif%}
+                            {%endfor%}
+
                         </ul>
                     </div>
                     <div class="p-2 flex-fill bd-highlight">
