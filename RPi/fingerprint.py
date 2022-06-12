@@ -10,6 +10,7 @@ import RPi.GPIO as GPIO
 import logging
 import datetime
 import time
+import random
 
 class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     """Extend adafruit library"""
@@ -52,8 +53,8 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     def action(self, ack_packet):
         logging.debug(f'ack code: {ack_packet}')
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-        random = 123
-        pincam.take_photo(date, random)
+        img_key = random.randint(1111, 9999)
+        pincam.take_photo(date, img_key)
         if ack_packet == 0:    
             util.start_motor_tread(False)
             logging.debug(f'Fingerprint Match {self.finger_id}')
@@ -64,14 +65,14 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 'user_id':self.finger_id,
                 'room_id':util.this_room.id,
                 'result': True,
-                'img_key':random})
+                'img_key':img_key})
         elif ack_packet == 9:
             util.play_sound('Fingerprint match.mp3')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
                 {'date':date,
                 'room_id':util.this_room.id,
                 'result': False,
-                'img_key':random})
+                'img_key':img_key})
         else:
             raise Exception
                 
@@ -100,9 +101,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                     raise Exception('Error formating')
                 logging.debug('fingerprint formated')
                 util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
-                    {'room_id':util.this_room.id,'user_id':'all'})
-                util.send_mqtt_encrypt('SGLCERIC/sync/re',
-                    {'room_id':util.this_room.id})
+                    {'room_id':util.this_room.id,'user_id':'resync'})
             elif location=='all':
                 ack_packet = self.empty_library()
                 if ack_packet != 0:
@@ -117,7 +116,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                     raise Exception(f'Error Delete {location}')
                 logging.debug(f'Model {location} Deleted')
                 util.send_mqtt_encrypt('SGLCERIC/sync/del/ack',
-                    {'room_id':util.this_room.id,'user_id':int(user_id)})
+                    {'room_id':util.this_room.id,'user_id':user_id})
         except Exception as e:
             logging.error(e)
         finally:
@@ -155,7 +154,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 raise Exception('store model error')
             logging.debug(f'fingerprint saved {location}')
             util.send_mqtt_encrypt('SGLCERIC/sync/add/ack',
-                    {'room_id':util.this_room.id,'user_id':int(user_id)})
+                    {'room_id':util.this_room.id,'user_id':user_id})
         except Exception as e:
             logging.error(e)
         finally:

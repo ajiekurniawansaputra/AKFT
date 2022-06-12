@@ -60,6 +60,7 @@ def auth_rfid(client, userdata, msg):
         img_key = msg['img_key']
         room_id = msg['roomId']
         data = msg['data']
+        user_id = None
         try:
             user_id = user_db.find_one({'RFID':data},{'_id':1})['_id']
             room_list = room_db.find({'$and':[{'room_id':room_id},{'user_list_ack':{'$in':[user_id]}}]}, {'_id':1,'name':1})
@@ -109,7 +110,7 @@ def save_img(client, userdata, msg):
         img = base64.b64encode(img)
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
-        db_ack = image_db.insert_one({'date':date, 'img':img, , 'img_key':img_key})
+        db_ack = image_db.insert_one({'date':date, 'img':img,'img_key':img_key})
         logging.debug(f'inserted id {db_ack.inserted_id}')
     except Exception as e:
             logging.error(e)
