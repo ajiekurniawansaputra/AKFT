@@ -65,13 +65,13 @@ def auth_rfid(client, userdata, msg):
             user_id = user_db.find_one({'RFID':data},{'_id':1})['_id']
             room_list = room_db.find({'$and':[{'room_id':room_id},{'user_list_ack':{'$in':[user_id]}}]}, {'_id':1,'name':1})
             logging.debug(room_list)
-            #if room_list:
-            result = True
-            #else: False
+            if room_list:
+                result = True
+            else: False
         except:
             result = False
         send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
-        if user_id:
+        if result:
             logging.debug(f'Saving data room id {room_id}, user id {user_id}')
             log_db.insert_one({'result':result,'room_id':room_id,'user_id':user_id,
                 'date':date,'sensor':'RFID', 'img_key':img_key})
@@ -104,13 +104,12 @@ def save_img(client, userdata, msg):
         logging.debug('Receiving image data')
         msg, data = receive_mqtt_decrypt(msg.payload)
         date = msg['date']
-        img_key = msg['img_key']
         img = data['img']
         img = base64.b64decode(img)
         img = base64.b64encode(img)
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
-        db_ack = image_db.insert_one({'date':date, 'img':img,'img_key':img_key})
+        db_ack = image_db.insert_one({'date':date, 'img':img})
         logging.debug(f'inserted id {db_ack.inserted_id}')
     except Exception as e:
             logging.error(e)
@@ -233,7 +232,7 @@ def send_mqtt_encrypt(topic,msg,data=None):                 #to sensor
         data = fernet.encrypt(data)
         data = base64.b64encode(data)                       #byte to string
         data = data.decode('ascii')
-        key = base64.b64encode(key)                         #byte to string
+        #key = base64.b64encode(key)                         #byte to string
         key = key.decode('utf-8')
         msg['data_key'] = key
     msg = json.dumps(msg).encode('utf-8')                   #dict to byte
@@ -261,7 +260,7 @@ def receive_mqtt_decrypt(msg):
     msg = json.loads(msg.decode('utf-8'))                   #byte to dict
     if data!=None:
         key = msg.pop('data_key')
-        key = base64.b64decode(key)                         #string to byte
+        #key = base64.b64decode(key)                         #string to byte
         data = base64.b64decode(data)                       #string to byte
         fernet = Fernet(key)
         data = fernet.decrypt(data)
