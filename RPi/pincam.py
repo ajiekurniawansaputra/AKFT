@@ -120,9 +120,7 @@ def shoot(date, img_key):
         logging.debug('Sending photo')
         util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img})
         logging.debug('Sent')
-    except:
-        Exception as e:
-        logging.debug(f'photo not captured, {e}')
-        return
+    except Exception as e:
+        logging.debug(f'photo processing failed, {e}')
     finally:
         os.remove(filename)
