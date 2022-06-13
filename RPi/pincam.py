@@ -11,7 +11,7 @@ import board
 import busio
 import adafruit_mpr121
 import datetime
-import pincam #hapus
+import random
 
 i2c = busio.I2C(board.SCL, board.SDA)
 mpr121 = adafruit_mpr121.MPR121(i2c)
@@ -74,8 +74,8 @@ def password_auth(pin):
     msg, _ = util.receive_mqtt_decrypt(util.this_room.password)
     password = int(msg['password'])
     date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-    random = 123
-    pincam.take_photo(date, random)
+    img_key = random.randint(1111, 9999)
+    take_photo(date, img_key)
     if pin == password:
         logging.debug('pin true')
         util.start_motor_tread(False)
@@ -96,21 +96,33 @@ def password_auth(pin):
             'result': False,
             'img_key':random})
 
-def take_photo(date, random):
+def take_photo(date, img_key):
     logging.debug('starting camera thread')
-    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(date, random))
+    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(date, img_key))
     take_photo_thread.start()
     logging.debug('camera thread finished')
     
-def shoot(date, random):
+def shoot(date, img_key):
     logging.debug('taking a photo')
-    os.system('libcamera-still -o img.jpg -t 1000 -n --width 1280 --height 720')
-    logging.debug('photo captured')
-    logging.debug('photo processing')
-    with open("img.jpg", "rb") as imageFile:
-        img = base64.b64encode(imageFile.read())
-        img = img.decode('utf-8')
-        print(img)
-    logging.debug('Sending photo')
-    util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img}, 'img_key':random)
-    logging.debug('Sent')
+    filename = "img-"+date+str(img_key)+".jpg"
+    try:
+        os.system("libcamera-still -o "+filename+" -t 1000 -n --width 1280 --height 720")
+        logging.debug('photo captured')
+    except Exception as e:
+        logging.debug(f'photo not captured, {e}')
+        return
+    try:
+        logging.debug('photo processing')
+        with open(filename, "rb") as imageFile:
+            img = base64.b64encode(imageFile.read())
+            img = img.decode('utf-8')
+            print(img)
+        logging.debug('Sending photo')
+        util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img})
+        logging.debug('Sent')
+    except:
+        Exception as e:
+        logging.debug(f'photo not captured, {e}')
+        return
+    finally:
+        os.remove(filename)
