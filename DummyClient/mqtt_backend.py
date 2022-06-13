@@ -133,16 +133,17 @@ def sign_up(client, userdata, msg):
     except Exception as e:
             logging.error(e)
 
-def resync(client, userdata, msg):
+#def resync(client, userdata, msg):
+def resync(user_list, room_id):
     """ This callback sends every model in a room saved in database
     *warning, check timing when delete ack finished and this func start. should be okay if onethreaded
     """
     try:
-        logging.debug('Resync, Receiving room id')
-        msg, _ = receive_mqtt_decrypt(msg.payload)
-        room_id = msg['room_id']
-        logging.debug('Get user list')
-        user_list = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1})['user_list']
+        #logging.debug('Resync, Receiving room id')
+        #msg, _ = receive_mqtt_decrypt(msg.payload)
+        #room_id = msg['room_id']
+        #logging.debug('Get user list')
+        #user_list = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1})['user_list']
         #location=indexonmongodb+1
         for i in range(len(user_list)):
             if user_list[i]!=None:
@@ -178,6 +179,14 @@ def ack_del(client, userdata, msg):
                 logging.debug(f'deleted')
             user_list_todel.clear()
             user_list_ack.clear()
+        elif user_id == 'resync':
+            for user in user_list_todel:
+                logging.debug(f'deleting {user_list[user]}')
+                user_list[user-1] = None
+                logging.debug(f'deleted')
+            user_list_todel.clear()
+            user_list_ack.clear()
+            resync(user_list, room_id)
         else:
             logging.debug(f'get location')
             location = user_list.index(user_id)
@@ -293,7 +302,7 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe('SGLCERIC/auth/rfid')
     client.subscribe('SGLCERIC/auth/pin')
     client.subscribe('SGLCERIC/enro/model')
-    client.subscribe('SGLCERIC/sync/re')
+    #client.subscribe('SGLCERIC/sync/re')
     client.subscribe('SGLCERIC/sync/del/ack')
     client.subscribe('SGLCERIC/sync/add/ack')
     client.subscribe('SGLCERIC/img')
@@ -313,7 +322,7 @@ def main(debug = False):
     client.message_callback_add('SGLCERIC/auth/rfid', auth_rfid)
     client.message_callback_add('SGLCERIC/auth/pin', auth_pin)
     client.message_callback_add('SGLCERIC/enro/model', sign_up)
-    client.message_callback_add('SGLCERIC/sync/re', resync)
+    #client.message_callback_add('SGLCERIC/sync/re', resync)
     client.message_callback_add('SGLCERIC/sync/del/ack', ack_del)
     client.message_callback_add('SGLCERIC/sync/add/ack', ack_add)
     client.message_callback_add('SGLCERIC/img', save_img)

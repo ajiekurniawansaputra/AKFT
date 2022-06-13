@@ -38,7 +38,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 logging.debug('Identify, Search for matching template')
                 ack_packet = self.finger_search()
                 self.action(ack_packet)
-                if self.get_image() == 0:
+                if self.get_image() == 0:#di ilangin aja ga guna
                     logging.debug('Wait to be released')
                     while self.get_image() == 0:
                         pass
@@ -47,7 +47,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 logging.error(e)
             finally:
                 self.busy = False
-        elif self.busy == True:
+        elif self.busy == True:#di ilangin aja ga guna
             pass
 
     def action(self, ack_packet):
@@ -84,10 +84,10 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
             msg, _ = util.receive_mqtt_decrypt(msg.payload)
             location = msg['location']
             startTime = time.time()
-            while self.busy == True and ((time.time()-startTime)<10):
+            while self.busy == True and ((time.time()-startTime)<30):
                 #wait until the fp not busy
                 pass
-            if (time.time()-startTime)>=10:
+            if (time.time()-startTime)>=30:
                 logging.debug('conection timeout')
                 return
         except Exception as e:
