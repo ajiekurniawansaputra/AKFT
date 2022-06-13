@@ -7,6 +7,7 @@ import subprocess
 import time
 import datetime
 import logging
+import random
 
 class RFID():
     def __init__(self):
@@ -26,14 +27,14 @@ class RFID():
         uid = "".join(buffer[0][2:])
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
-        random = 123
+        img_key = random.randint(1111, 9999)
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
             {'date':date,
             'roomId':util.this_room.id,
             'data':uid,
-            'img_key':random})
-        pincam.take_photo(date, random)
+            'img_key':img_key})
+        pincam.take_photo(date, img_key)
         self.wait_for_response()
         logging.debug('Wait to be released')
         subprocess.check_output("/usr/bin/nfc-poll", stderr=open('/dev/null','w'))
