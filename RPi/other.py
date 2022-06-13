@@ -30,7 +30,7 @@ def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
         data = fernet.encrypt(data)
         data = base64.b64encode(data)                       #byte to string
         data = data.decode('ascii')
-        key = base64.b64encode(key)                         #byte to string
+        #key = base64.b64encode(key)                         #byte to string
         key = key.decode('utf-8')
         msg['data_key'] = key
     msg = json.dumps(msg).encode('utf-8')                   #dict to byte
@@ -59,7 +59,7 @@ def receive_mqtt_decrypt(msg):
     msg = json.loads(msg.decode('utf-8'))                   #byte to dict
     if data!=None:
         key = msg.pop('data_key')
-        key = base64.b64decode(key)                         #string to byte
+        #key = base64.b64decode(key)                         #string to byte
         data = base64.b64decode(data)                       #string to byte
         fernet = Fernet(key)
         data = fernet.decrypt(data)
