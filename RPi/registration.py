@@ -6,12 +6,15 @@ import adafruit_fingerprint_edit as af
 import serial
 import subprocess
 import logging
+import time
 
 def create_model():
     try:
+        start_time = time.time()
         logging.debug('Place Finger')
         while finger.get_image() != af.OK:
-            pass
+            if (start_time+30 < time.time()):
+                return -1
         ackPacket = finger.image_2_tz(1)
         if ackPacket != af.OK:
             raise Exception('Error templating')
@@ -19,8 +22,10 @@ def create_model():
         while finger.get_image() == af.OK:
             pass
         logging.debug('Place Finger again')
+        start_time = time.time()
         while finger.get_image() != af.OK:
-            pass
+            if (start_time+30 < time.time()):
+                return -1
         ackPacket = finger.image_2_tz(2)
         if ackPacket != af.OK:
             raise Exception('Error templating')
@@ -66,10 +71,11 @@ def on_message_command_enroll(client, userdata, msg):
     util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking Fingerprint')
     while(model is None):
         model = create_model()
+    if model == -1 :
+        logging.debug('Abort, Timeout')    
     util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking RFID')
     while(uid is None):
-        guid = create_uid()
-        #uid='12345'
+        uid = create_uid()
     util.send_mqtt_encrypt("SGLCERIC/enro/model",
         {'user_id':user_id, 'uid':uid},
         {'model':model})
@@ -88,6 +94,34 @@ def main(debug=False):
     util.client.subscribe('SGLCERIC/enro/id')
     util.client.loop_forever()
     
+def main2(debug=False):
+    if debug == True:
+        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S',
+                            level=logging.DEBUG)
+    else:
+        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
+        
+    util.client.connect('broker.hivemq.com', 1883, 8000)
+    while True:
+        model, uid = None, None
+        try:
+            logging.debug('Waiting for UID')
+            while(uid is None):
+                uid = create_uid()
+            logging.debug('UID Present, waiting for FP. timeout in 30seconds')
+            while(model is None):
+                model = create_model()
+            if model == -1:
+                logging.debug('Timeout')
+            else:
+                logging.debug('FP Present, Sending data')
+                util.send_mqtt_encrypt("SGLCERIC/enro/model",{'uid':uid},{'model':model})
+                logging.debug('Data sent')
+        except:
+            model, uid = None, None
+            logging.debug('error')
+
 if __name__ == "__main__":
     finger = af.Adafruit_Fingerprint(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
-    main(debug=True)
+    #main(debug=True)
+    main2(debug=True)
