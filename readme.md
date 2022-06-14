@@ -38,7 +38,7 @@ location could be string or int.
 * int
 delete one model in the location spesified
 
-### 4. 'SGLCERIC/enro/id'
+### 4. 'SGLCERIC/enro/id' (unused)
 receive a command to acquire fingerprint model and uid, expected payload json
 ```
 {
@@ -77,7 +77,8 @@ trigered when device find a match
     'msg':{
         'date':str(date),
         'userId':(int),
-        'roomId':(int)
+        'roomId':(int),
+        'img_key':(int),
         'result':(bollean)},
     'data':{None}
     }
@@ -92,7 +93,8 @@ triggered when device read uid
     'msg':{
         'date':str(date),
         'roomId':(int),
-        'data':uid},
+        'data':uid,
+        'img_key':(int),},
     'data':{None}
     }
 ```
@@ -103,9 +105,7 @@ user_id is location in which the model is saved
 triggered after device receive command from topic _'SGLCERIC/enro/id'_ and succesfully acquire fp model and uid
 ```
 {
-    'msg':{
-        'user_id':(int),
-        'uid':uid},
+    'msg':{'uid':uid},
     'data':{'model':model}
     }
 ```
@@ -121,7 +121,7 @@ curently not encrypted
 triggered when a delete command was succesfully proceed.
 ```
 {
-    'msg':{'user_id': (int), 'room_id': (int)},
+    'msg':{'user_id': (string), 'room_id': (int)},
     'data':{None}
     }
 ```
@@ -143,4 +143,4 @@ triggered when an authentication is attempted.
     'data':{'img':img}
     }
 ```
-curently image is encoded as string with utf-8
+curently image is encoded as string with utf-8, filename contain img_key.
