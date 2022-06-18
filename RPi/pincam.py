@@ -85,7 +85,7 @@ def password_auth(pin):
             {'date':date,
             'room_id':util.this_room.id,
             'result': True,
-            'img_key':random})
+            'img_key':img_key})
     else:
         logging.debug('pin false')        
         util.play_sound('Pin not Match.mp3')
@@ -94,7 +94,7 @@ def password_auth(pin):
             {'date':date,
             'room_id':util.this_room.id,
             'result': False,
-            'img_key':random})
+            'img_key':img_key})
 
 def take_photo(date, img_key):
     logging.debug('starting camera thread')
@@ -104,23 +104,20 @@ def take_photo(date, img_key):
     
 def shoot(date, img_key):
     logging.debug('taking a photo')
-    filename = "img-"+date+str(img_key)+".jpg"
     try:
-        os.system("libcamera-still -o "+filename+" -t 1000 -n --width 1280 --height 720")
+        os.system("libcamera-still -o img.jpg -t 1000 -n --width 1280 --height 720")
         logging.debug('photo captured')
     except Exception as e:
         logging.debug(f'photo not captured, {e}')
         return
     try:
         logging.debug('photo processing')
-        with open(filename, "rb") as imageFile:
+        with open("img.jpg", "rb") as imageFile:
             img = base64.b64encode(imageFile.read())
             img = img.decode('utf-8')
-            print(img)
+            #print(img)
         logging.debug('Sending photo')
-        util.send_mqtt_encrypt('SGLCERIC/img',{'date':date}, {'img':img})
+        util.send_mqtt_encrypt('SGLCERIC/img',{'date':date, 'img_key':img_key}, {'img':img})
         logging.debug('Sent')
     except Exception as e:
         logging.debug(f'photo processing failed, {e}')
-    finally:
-        os.remove(filename)
