@@ -57,6 +57,8 @@ def read_keypad():
                     input_key = _process_key(input_key, i)
                     start_key_timer = time.time()
                 if (len(input_key))==0:
+                    if util.this_room.rfid_flag == 0:
+                        return
                     start_key_timer = time.time()
         if len(input_key)<6:
             print("timeout")

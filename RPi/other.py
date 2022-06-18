@@ -14,12 +14,24 @@ import RPi.GPIO as gpio
 import time
 import logging
 import threading
+import fingerprint
+import rfid
+import pincam
+import serial
+
 
 class Room:
     """ Class that hold room data"""
     def __init__ (self):
+        #define thread
+        fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor)
+        rfid_thread = threading.Thread(name='rfid_sensor', target=rfid_sensor)
+        pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor)  
         self.id = 6
         self.password = None
+        self.fingerprint_flag = 0
+        self.pin_flag = 0
+        self.rfid_flag = 0
 
 def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
     """function to send encrypt data and then send them with mqtt"""
@@ -138,6 +150,52 @@ def motor_thread_func(state):
         #p.stop()
         #gpio.cleanup()
         
+def set_command(client, userdata, msg):
+    """callback for a command to change which authentication is active"""
+    msg, _ = receive_mqtt_decrypt(msg.payload)
+    logging.debug('Setting Authentication Method')
+    if msg['fingerprint'] and this_room.fingerprint_flag == 0:
+        this_room.fingerprint_thread.start()
+    else:
+        this_room.fingerprint_flag = msg['fingerprint']
+    
+    if msg['rfid'] and this_room.rfid_flag == 0:
+        this_room.rfid_thread.start()
+    else:
+        this_room.rfid_flag = msg['rfid']
+    
+    if msg['pin'] and this_room.pin_flag == 0:
+        this_room.pin_thread.start()
+    else:
+        this_room.pin_flag = msg['pin']
+    logging.debug('Authentication Method Set')
+
+def fingerprint_sensor():
+    logging.debug('fingerprint thread start')
+    while this_room.fingerprint_flag == 1:
+        try:
+            fp.read()
+        except Exception as e:
+            print(e)
+
+def rfid_sensor():
+    logging.debug('rfid thread start')
+    while this_room.rfid_flag == 1:
+        try:
+            nfc.read()
+        except Exception as e:
+            print(e)
+
+def touchpad_sensor():
+    logging.debug('touchpad thread start')
+    while this_room.rfid_flag == 1:
+        try:
+            pincam.read_keypad()
+        except Exception as e:
+            print(e)
+
+fp = fingerprint.FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
+nfc = rfid.RFID()
 this_room = Room()
 client = mqtt.Client(protocol=mqtt.MQTTv311)
 with open("server_public_key.pem", "rb") as key_file:  #server public key
@@ -149,4 +207,3 @@ with open("sensor_private_key.pem", "rb") as key_file: #rpi private key
         key_file.read(),
         password=None,
         backend=default_backend())
-#start_motor_tread(False)
