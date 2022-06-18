@@ -19,9 +19,11 @@ def create_model():
         if ackPacket != af.OK:
             raise Exception('Error templating')
         logging.debug('Remove Finger')
+        util.client.publish(topic='SGLCERIC/enro/notif', payload='Remove Finger')
         while finger.get_image() == af.OK:
             pass
         logging.debug('Place Finger again')
+        util.client.publish(topic='SGLCERIC/enro/notif', payload='Place Finger Again')
         start_time = time.time()
         while finger.get_image() != af.OK:
             if (start_time+30 < time.time()):
@@ -43,6 +45,7 @@ def create_model():
 
 def create_uid():
     try:
+        #should we add timeout timer?
         logging.debug('Reading RFID')
         uid = None
         while uid == None:
@@ -66,19 +69,28 @@ def create_uid():
 def on_message_command_enroll(client, userdata, msg):
     msg, _ = util.receive_mqtt_decrypt(msg.payload)
     user_id = msg['user_id']
-    logging.debug('New registration command, id:{user_id}')
-    model, uid = None, None
-    util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking Fingerprint')
-    while(model is None):
-        model = create_model()
-    if model == -1 :
-        logging.debug('Abort, Timeout')    
-    util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking RFID')
-    while(uid is None):
-        uid = create_uid()
-    util.send_mqtt_encrypt("SGLCERIC/enro/model",
-        {'user_id':user_id, 'uid':uid},
-        {'model':model})
+    type_auth = msg['type']
+    logging.debug('New registration command, id:{user_id}, for {type_auth}')
+    if type_auth == 'fingerprint':
+        model = None
+        util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking Fingerprint')
+        while(model is None):
+            model = create_model()
+        if model == -1 :
+            logging.debug('Abort, Timeout')
+            util.client.publish(topic='SGLCERIC/enro/notif', payload='Timeout')
+            return
+        util.client.publish(topic='SGLCERIC/enro/notif', payload='Fingerprint taken')
+        util.send_mqtt_encrypt("SGLCERIC/enro/model",
+            {'user_id':user_id, 'type':type_auth},
+            {'model':model})
+    else:
+        uid = None
+        util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking RFID')
+        while(uid is None):
+            uid = create_uid()
+        util.client.publish(topic='SGLCERIC/enro/notif', payload='RFID taken')
+        util.send_mqtt_encrypt("SGLCERIC/enro/model",{'user_id':user_id, 'type':type_auth, 'uid':uid})
     logging.debug('Data sent, id:{user_id}')
     return
 
@@ -93,35 +105,7 @@ def main(debug=False):
     util.client.connect('broker.hivemq.com', 1883, 8000)
     util.client.subscribe('SGLCERIC/enro/id')
     util.client.loop_forever()
-    
-def main2(debug=False):
-    if debug == True:
-        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S',
-                            level=logging.DEBUG)
-    else:
-        logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-        
-    util.client.connect('broker.hivemq.com', 1883, 8000)
-    while True:
-        model, uid = None, None
-        try:
-            logging.debug('Waiting for UID')
-            while(uid is None):
-                uid = create_uid()
-            logging.debug('UID Present, waiting for FP. timeout in 30seconds')
-            while(model is None):
-                model = create_model()
-            if model == -1:
-                logging.debug('Timeout')
-            else:
-                logging.debug('FP Present, Sending data')
-                util.send_mqtt_encrypt("SGLCERIC/enro/model",{'uid':uid},{'model':model})
-                logging.debug('Data sent')
-        except:
-            model, uid = None, None
-            logging.debug('error')
 
 if __name__ == "__main__":
     finger = af.Adafruit_Fingerprint(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
-    #main(debug=True)
-    main2(debug=True)
+    main(debug=True)
