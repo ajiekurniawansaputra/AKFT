@@ -15,7 +15,14 @@ class RFID():
             
     def read(self):
         logging.debug('Reading rfid')
-        lines = subprocess.check_output("/usr/bin/nfc-poll2", stderr=open('/dev/null','w'))
+        lines = subprocess.Popen("/usr/bin/nfc-poll2", shell=True)
+        #lines = subprocess.check_output("/usr/bin/nfc-poll2", stderr=open('/dev/null','w'))
+        start_time = time.time()
+        while ((start_time+5)-time.time > 0) and (out is None) :
+            out, _ = lines.communicate()
+        if out is None:
+            lines.kill()
+            lines.terminate()
         buffer=[]
         for line in lines.splitlines():
             line_content = line.decode('UTF-8')
@@ -69,3 +76,13 @@ class RFID():
             logging.debug('conection timeout')
             util.play_sound('Sorry. Please try again.mp3')
         return
+
+def rfid_sensor():
+    logging.debug('rfid thread start')
+    while util.this_room.rfid_flag == True:
+        try:
+            nfc.read()
+        except Exception as e:
+            print(e)
+
+nfc = RFID()

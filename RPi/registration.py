@@ -103,7 +103,7 @@ def main(debug=False):
         
     util.client.message_callback_add('SGLCERIC/enro/id', on_message_command_enroll)
     util.client.connect('broker.hivemq.com', 1883, 8000)
-    util.client.subscribe('SGLCERIC/enro/id')
+    util.client.subscribe('SGLCERIC/enro/id', 2)
     util.client.loop_forever()
 
 if __name__ == "__main__":

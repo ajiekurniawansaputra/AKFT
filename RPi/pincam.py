@@ -47,6 +47,14 @@ def _process_key(input_key, i):
         print("Input {} touched!".format(key_map[str(i)]))
     return input_key
 
+def touchpad_sensor():
+    logging.debug('touchpad thread start')
+    while util.this_room.rfid_flag == True:
+        try:
+            read_keypad()
+        except Exception as e:
+            print(e)
+
 def read_keypad():
     try:
         input_key = []

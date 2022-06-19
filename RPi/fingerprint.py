@@ -11,6 +11,7 @@ import logging
 import datetime
 import time
 import random
+import serial
 
 class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     """Extend adafruit library"""
@@ -159,3 +160,13 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
             logging.error(e)
         finally:
             self.busy = False
+
+def fingerprint_sensor():
+    logging.debug('fingerprint thread start')
+    while util.this_room.fingerprint_flag == True:
+        try:
+            fp.read()
+        except Exception as e:
+            print(e)
+
+fp = FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
