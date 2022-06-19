@@ -15,7 +15,7 @@ class RFID():
             
     def read(self):
         logging.debug('Reading rfid')
-        lines = subprocess.Popen("/usr/bin/nfc-poll2", shell=True)
+        lines = subprocess.Popen("/usr/bin/nfc-poll2", shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=TRUE)
         #lines = subprocess.check_output("/usr/bin/nfc-poll2", stderr=open('/dev/null','w'))
         start_time = time.time()
         while ((start_time+5)-time.time > 0) and (out is None) :
@@ -24,8 +24,8 @@ class RFID():
             lines.kill()
             lines.terminate()
         buffer=[]
-        for line in lines.splitlines():
-            line_content = line.decode('UTF-8')
+        for line in out.splitlines():
+            line_content = out.decode('UTF-8')
             line_content = line_content.split()
             if(line_content[0] =='UID'):
                 buffer.append(line_content)
@@ -44,7 +44,7 @@ class RFID():
         pincam.take_photo(date, img_key)
         self.wait_for_response()
         logging.debug('Wait to be released')
-        subprocess.check_output("/usr/bin/nfc-poll", stderr=open('/dev/null','w'))
+        subprocess.check_output("/usr/bin/nfc-poll", stderr=subprocess.DEVNULL)
         logging.debug('Released')
         return
 
