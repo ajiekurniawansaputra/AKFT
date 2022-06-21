@@ -108,11 +108,12 @@ def password_auth(pin):
 
 def take_photo(date, img_key):
     logging.debug('starting camera thread')
-    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(date, img_key))
+    img_key = str(img_key)+date
+    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(img_key))
     take_photo_thread.start()
     logging.debug('camera thread finished')
     
-def shoot(date, img_key):
+def shoot(img_key):
     logging.debug('taking a photo')
     try:
         os.system("libcamera-still -o img.jpg -t 1000 -n --width 1280 --height 720")
@@ -127,7 +128,7 @@ def shoot(date, img_key):
             img = img.decode('utf-8')
             #print(img)
         logging.debug('Sending photo')
-        util.send_mqtt_encrypt('SGLCERIC/img',{'date':date, 'img_key':img_key}, {'img':img})
+        util.send_mqtt_encrypt('SGLCERIC/img',{'img_key':img_key}, {'img':img})
         logging.debug('Sent')
     except Exception as e:
         logging.debug(f'photo processing failed, {e}')
