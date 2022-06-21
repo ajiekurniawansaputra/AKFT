@@ -12,6 +12,7 @@ import busio
 import adafruit_mpr121
 import datetime
 import random
+import threading
 
 i2c = busio.I2C(board.SCL, board.SDA)
 mpr121 = adafruit_mpr121.MPR121(i2c)
@@ -78,6 +79,8 @@ def read_keypad():
     except Exception as e:
         print("tombol clear", e)
         pass
+
+pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor)
 
 def password_auth(pin):
     logging.debug('decrypt password')

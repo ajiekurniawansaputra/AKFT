@@ -8,6 +8,7 @@ import time
 import datetime
 import logging
 import random
+import threading
 
 class RFID():
     def __init__(self):
@@ -86,3 +87,4 @@ def rfid_sensor():
             print(e)
 
 nfc = RFID()
+rfid_thread = threading.Thread(name='rfid_sensor', target=rfid_sensor)

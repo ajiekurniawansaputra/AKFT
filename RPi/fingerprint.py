@@ -12,6 +12,7 @@ import datetime
 import time
 import random
 import serial
+import threading
 
 class FP(adafruit_fingerprint.Adafruit_Fingerprint):
     """Extend adafruit library"""
@@ -170,3 +171,4 @@ def fingerprint_sensor():
             print(e)
 
 fp = FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
+fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor)

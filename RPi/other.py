@@ -23,9 +23,9 @@ class Room:
     """ Class that hold room data"""
     def __init__ (self):
         #define thread
-        fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint.fingerprint_sensor)
-        rfid_thread = threading.Thread(name='rfid_sensor', target=rfid.rfid_sensor)
-        pin_thread = threading.Thread(name='touchpad_sensor', target=pincam.touchpad_sensor)  
+        #fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint.fingerprint_sensor)
+        #rfid_thread = threading.Thread(name='rfid_sensor', target=rfid.rfid_sensor)
+        #pin_thread = threading.Thread(name='touchpad_sensor', target=pincam.touchpad_sensor)  
         self.id = 6
         self.password = None
         self.fingerprint_flag = 0
@@ -155,19 +155,19 @@ def set_command(client, userdata, msg):
     logging.debug('Setting Authentication Method')
     if msg['fingerprint'] and this_room.fingerprint_flag == False:
         this_room.fingerprint_flag = True
-        this_room.fingerprint_thread.start()
+        fingerprint.fingerprint_thread.start()
     else:
         this_room.fingerprint_flag = msg['fingerprint']
     
     if msg['rfid'] and this_room.rfid_flag == False:
         this_room.rfid_flag = True
-        this_room.rfid_thread.start()
+        rfid.rfid_thread.start()
     else:
         this_room.rfid_flag = msg['rfid']
     
     if msg['pin'] and this_room.pin_flag == False:
         this_room.pin_flag = True
-        this_room.pin_thread.start()
+        pincam.pin_thread.start()
     else:
         this_room.pin_flag = msg['pin']
     logging.debug('Authentication Method Set')
