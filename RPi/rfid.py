@@ -37,12 +37,13 @@ class RFID():
         logging.debug('Sending Payload')
         img_key = random.randint(1111, 9999)
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
+        img_key = str(img_key)+date
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
             {'date':date,
             'roomId':util.this_room.id,
             'data':uid,
             'img_key':img_key})
-        pincam.take_photo(date, img_key)
+        pincam.take_photo(img_key)
         self.wait_for_response()
         logging.debug('Wait to be released')
         subprocess.check_output("/usr/bin/nfc-poll", stderr=subprocess.DEVNULL)
@@ -87,4 +88,4 @@ def rfid_sensor():
             print(e)
 
 nfc = RFID()
-rfid_thread = threading.Thread(name='rfid_sensor', target=rfid_sensor)
+#rfid_thread = threading.Thread(name='rfid_sensor', target=rfid_sensor)

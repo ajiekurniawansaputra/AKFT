@@ -56,7 +56,8 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
         logging.debug(f'ack code: {ack_packet}')
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
         img_key = random.randint(1111, 9999)
-        pincam.take_photo(date, img_key)
+        img_key = str(img_key)+date
+        pincam.take_photo(img_key)
         if ack_packet == 0:    
             util.start_motor_tread(False)
             logging.debug(f'Fingerprint Match {self.finger_id}')
@@ -171,4 +172,4 @@ def fingerprint_sensor():
             print(e)
 
 fp = FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
-fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor)
+#fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor)

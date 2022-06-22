@@ -103,13 +103,13 @@ def save_img(client, userdata, msg):
     try:
         logging.debug('Receiving image data')
         msg, data = receive_mqtt_decrypt(msg.payload)
-        date = msg['date']
+        img_key = msg['img_key']
         img = data['img']
         img = base64.b64decode(img)
         img = base64.b64encode(img)
         logging.debug(date)
         date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
-        db_ack = image_db.insert_one({'date':date, 'img':img})
+        db_ack = image_db.insert_one({'img_key':img_key, 'img':img})
         logging.debug(f'inserted id {db_ack.inserted_id}')
     except Exception as e:
             logging.error(e)

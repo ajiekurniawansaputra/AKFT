@@ -80,7 +80,7 @@ def read_keypad():
         print("tombol clear", e)
         pass
 
-pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor)
+#pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor)
 
 def password_auth(pin):
     logging.debug('decrypt password')
@@ -88,7 +88,8 @@ def password_auth(pin):
     password = int(msg['password'])
     date = str(datetime.datetime.now().replace(microsecond=0))[2:]
     img_key = random.randint(1111, 9999)
-    take_photo(date, img_key)
+    img_key = str(img_key)+date
+    take_photo(img_key)
     if pin == password:
         logging.debug('pin true')
         util.start_motor_tread(False)
@@ -109,9 +110,8 @@ def password_auth(pin):
             'result': False,
             'img_key':img_key})
 
-def take_photo(date, img_key):
+def take_photo(img_key):
     logging.debug('starting camera thread')
-    img_key = str(img_key)+date
     take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(img_key))
     take_photo_thread.start()
     logging.debug('camera thread finished')

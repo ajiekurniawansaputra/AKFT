@@ -18,6 +18,9 @@ import fingerprint
 import rfid
 import pincam
 
+fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint.fingerprint_sensor)
+rfid_thread = threading.Thread(name='rfid_sensor', target=rfid.rfid_sensor)
+pin_thread = threading.Thread(name='touchpad_sensor', target=pincam.touchpad_sensor) 
 
 class Room:
     """ Class that hold room data"""
@@ -153,23 +156,33 @@ def set_command(client, userdata, msg):
     """callback for a command to change which authentication is active"""
     msg, _ = receive_mqtt_decrypt(msg.payload)
     logging.debug('Setting Authentication Method')
-    if msg['fingerprint'] and this_room.fingerprint_flag == False:
-        this_room.fingerprint_flag = True
-        fingerprint.fingerprint_thread.start()
-    else:
-        this_room.fingerprint_flag = msg['fingerprint']
-    
-    if msg['rfid'] and this_room.rfid_flag == False:
-        this_room.rfid_flag = True
-        rfid.rfid_thread.start()
-    else:
-        this_room.rfid_flag = msg['rfid']
-    
-    if msg['pin'] and this_room.pin_flag == False:
-        this_room.pin_flag = True
-        pincam.pin_thread.start()
-    else:
-        this_room.pin_flag = msg['pin']
+    global fingerprint_thread
+    global rfid_thread
+    global pin_thread
+    try:
+        if msg['fingerprint'] and this_room.fingerprint_flag == False:
+            this_room.fingerprint_flag = True
+            fingerprint.fingerprint_thread.start()
+        else:
+            this_room.fingerprint_flag = msg['fingerprint']
+        
+        if msg['rfid'] and this_room.rfid_flag == False:
+            this_room.rfid_flag = True
+            rfid.rfid_thread.start()
+        else:
+            this_room.rfid_flag = msg['rfid']
+        
+        if msg['pin'] and this_room.pin_flag == False:
+            this_room.pin_flag = True
+            pincam.pin_thread.start()
+        else:
+            this_room.pin_flag = msg['pin']
+    except Exception as e:
+        print(e)
+    finally:
+        fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint.fingerprint_sensor)
+        rfid_thread = threading.Thread(name='rfid_sensor', target=rfid.rfid_sensor)
+        pin_thread = threading.Thread(name='touchpad_sensor', target=pincam.touchpad_sensor) 
     logging.debug('Authentication Method Set')
 
 this_room = Room()
