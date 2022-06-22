@@ -50,7 +50,7 @@ def _process_key(input_key, i):
 
 def touchpad_sensor():
     logging.debug('touchpad thread start')
-    while util.this_room.rfid_flag == True:
+    while True:
         try:
             read_keypad()
         except Exception as e:
@@ -66,8 +66,6 @@ def read_keypad():
                     input_key = _process_key(input_key, i)
                     start_key_timer = time.time()
                 if (len(input_key))==0:
-                    if util.this_room.rfid_flag == 0:
-                        return
                     start_key_timer = time.time()
         if len(input_key)<6:
             print("timeout")
@@ -75,12 +73,14 @@ def read_keypad():
         else:
             input_key = ''.join(input_key)
             print(input_key,type(input_key))
+            if util.this_room.pin_flag==0:
+                return None
             password_auth(int(input_key))
     except Exception as e:
         print("tombol clear", e)
         pass
 
-#pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor)
+pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor).start()
 
 def password_auth(pin):
     logging.debug('decrypt password')

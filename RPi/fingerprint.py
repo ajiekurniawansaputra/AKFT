@@ -27,7 +27,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
         """Requests the sensor take the live scan and template it in char 1
         search for model and finally send data to mqtt broker
         """
-        if self.busy == False and GPIO.input(18)==0:
+        if self.busy == False and GPIO.input(18)==0 and util.this_room.fingerprint_flag == True:
             self.busy = True
             try:
                 if self.get_image() != 0:
@@ -165,11 +165,11 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
 
 def fingerprint_sensor():
     logging.debug('fingerprint thread start')
-    while util.this_room.fingerprint_flag == True:
+    while True:
         try:
             fp.read()
         except Exception as e:
             print(e)
 
 fp = FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
-#fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor)
+fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor).start()
