@@ -13,40 +13,50 @@ import threading
 class RFID():
     def __init__(self):
         self.busy = False
-            
+        self.result = None
+        self.thread_status = False
+
+    def nfc_sub_thread(self):
+        self.thread_status = True
+        lines = subprocess.Popen("nfc-poll2", shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True)
+        out, _ = lines.communicate()
+        logging.debug(f'Captured out is {out}')
+        self.result = out
+        self.thread_status = False
+
     def read(self):
         logging.debug('Reading rfid')
-        lines = subprocess.Popen("/usr/bin/nfc-poll2", shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=TRUE)
-        #lines = subprocess.check_output("/usr/bin/nfc-poll2", stderr=open('/dev/null','w'))
+        #start the threaad
+        
         start_time = time.time()
-        while ((start_time+5)-time.time > 0) and (out is None) :
-            out, _ = lines.communicate()
-        if out is None:
+        while (time.time() - start_time < 5) and (self.result is None) :
+            pass
+        if self.result is None:
             lines.kill()
             lines.terminate()
-        buffer=[]
-        for line in out.splitlines():
-            line_content = out.decode('UTF-8')
-            line_content = line_content.split()
-            if(line_content[0] =='UID'):
-                buffer.append(line_content)
-            else:
-                pass
-        uid = "".join(buffer[0][2:])
+            self.thread_status = False
+            return None
+
+        lines = self.result.splitlines()
+        for line in lines:
+            line_content = lines
+   
+        uid_raw = [s for s in line_content if "UID" in s]
+        temp = uid_raw[0].split()
+        uid="".join(temp[2:])
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
         img_key = random.randint(1111, 9999)
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-        img_key = str(img_key)+date
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
             {'date':date,
             'roomId':util.this_room.id,
             'data':uid,
             'img_key':img_key})
-        pincam.take_photo(img_key)
+        pincam.take_photo(date, img_key)
         self.wait_for_response()
         logging.debug('Wait to be released')
-        subprocess.check_output("/usr/bin/nfc-poll", stderr=subprocess.DEVNULL)
+        subprocess.check_output("nfc-poll", stderr=subprocess.DEVNULL)
         logging.debug('Released')
         return
 

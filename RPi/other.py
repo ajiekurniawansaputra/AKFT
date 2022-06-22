@@ -162,19 +162,19 @@ def set_command(client, userdata, msg):
     try:
         if msg['fingerprint'] and this_room.fingerprint_flag == False:
             this_room.fingerprint_flag = True
-            fingerprint.fingerprint_thread.start()
+            fingerprint_thread.start()
         else:
             this_room.fingerprint_flag = msg['fingerprint']
         
         if msg['rfid'] and this_room.rfid_flag == False:
             this_room.rfid_flag = True
-            rfid.rfid_thread.start()
+            rfid_thread.start()
         else:
             this_room.rfid_flag = msg['rfid']
         
         if msg['pin'] and this_room.pin_flag == False:
             this_room.pin_flag = True
-            pincam.pin_thread.start()
+            pin_thread.start()
         else:
             this_room.pin_flag = msg['pin']
     except Exception as e:
