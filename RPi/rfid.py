@@ -24,6 +24,8 @@ class RFID():
                 buffer.append(line_content)
             else:
                 pass
+        if util.this_room.rfid_flag==0:
+            return None
         uid = "".join(buffer[0][2:])
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
