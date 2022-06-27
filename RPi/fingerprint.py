@@ -172,4 +172,4 @@ def fingerprint_sensor():
             print(e)
 
 fp = FP(serial.Serial("/dev/serial0", baudrate=57600, timeout=1))
-fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor).start()
+fingerprint_thread = threading.Thread(name='fingerprint_sensor', target=fingerprint_sensor)

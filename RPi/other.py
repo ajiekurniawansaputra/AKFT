@@ -23,9 +23,9 @@ class Room:
     def __init__ (self):
         self.id = 6
         self.password = None
-        self.fingerprint_flag = 0
-        self.pin_flag = 0
-        self.rfid_flag = 0
+        self.fingerprint_flag = True
+        self.pin_flag = True
+        self.rfid_flag = True
 
 def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
     """function to send encrypt data and then send them with mqtt"""
