@@ -56,7 +56,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
         logging.debug(f'ack code: {ack_packet}')
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
         img_key = random.randint(1111, 9999)
-        img_key = str(img_key)+date
+        img_key = date+str(img_key)
         pincam.take_photo(img_key)
         if ack_packet == 0:    
             util.start_motor_tread(False)

@@ -89,7 +89,7 @@ def password_auth(pin):
     password = int(msg['password'])
     date = str(datetime.datetime.now().replace(microsecond=0))[2:]
     img_key = random.randint(1111, 9999)
-    img_key = str(img_key)+date
+    img_key = date+str(img_key)
     take_photo(img_key)
     if pin == password:
         logging.debug('pin true')
@@ -121,14 +121,14 @@ def shoot(img_key):
     logging.debug('taking a photo')
     try:
         #os.system("libcamera-still -o img.jpg -t 500 -n --width 1280 --height 720")
-        subprocess.Popen("libcamera-still -o img.jpg -t 500 -n --width 1280 --height 720", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.Popen("libcamera-still -o /home/pi/Documents/ajie/akft/RPi/img.jpg -t 500 -n --width 1280 --height 720", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         logging.debug('photo captured')
     except Exception as e:
         logging.debug(f'photo not captured, {e}')
         return
     try:
         logging.debug('photo processing')
-        with open("img.jpg", "rb") as imageFile:
+        with open("/home/pi/Documents/ajie/akft/RPi/img.jpg", "rb") as imageFile:
             img = base64.b64encode(imageFile.read())
             img = img.decode('utf-8')
             #print(img)

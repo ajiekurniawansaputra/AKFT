@@ -25,19 +25,19 @@ class RFID():
                 buffer.append(line_content)
             else:
                 pass
-        #if util.this_room.rfid_flag==0:
-         #   return None
+        if util.this_room.rfid_flag==0:
+            return None
         uid = "".join(buffer[0][2:])
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-        img_key = str(random.randint(1111, 9999))+date
+        img_key = date+str(random.randint(1111, 9999))
         util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
             {'date':date,
             'roomId':util.this_room.id,
             'data':uid,
             'img_key':img_key})
-        #pincam.take_photo(img_key)
+        pincam.take_photo(img_key)
         self.wait_for_response()
         logging.debug('Wait to be released')
         subprocess.check_output("/usr/bin/nfc-wait", stderr=open('/dev/null','w'))

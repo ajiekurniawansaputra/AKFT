@@ -49,7 +49,7 @@ def create_uid():
         logging.debug('Reading RFID')
         uid = None
         while uid == None:
-            lines = subprocess.check_output("/usr/bin/nfc-poll2", stderr=open('/dev/null','w'))
+            lines = subprocess.check_output("/usr/bin/nfc-read", stderr=subprocess.DEVNULL)
             buffer=[]
             for line in lines.splitlines():
                 line_content = line.decode('UTF-8')

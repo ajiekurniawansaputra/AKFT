@@ -136,7 +136,7 @@ def motor_thread_func(state):
         p.stop()
         gpio.cleanup()
         gpio.setmode(gpio.BCM)
-        print("doooone c;eaning up")
+        print("doooone cleaning up")
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
         print("doooone")
     except Exception as e:
@@ -155,11 +155,11 @@ def set_command(client, userdata, msg):
 
 this_room = Room()
 client = mqtt.Client(protocol=mqtt.MQTTv311)
-with open("server_public_key.pem", "rb") as key_file:  #server public key
+with open("/home/pi/Documents/ajie/akft/RPi/server_public_key.pem", "rb") as key_file:  #server public key
     public_key = serialization.load_pem_public_key(
         key_file.read(),
         backend=default_backend())
-with open("sensor_private_key.pem", "rb") as key_file: #rpi private key
+with open("/home/pi/Documents/ajie/akft/RPi/sensor_private_key.pem", "rb") as key_file: #rpi private key
     private_key = serialization.load_pem_private_key(
         key_file.read(),
         password=None,
