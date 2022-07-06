@@ -16,18 +16,18 @@ class RFID():
             
     def read(self):
         logging.debug('Reading rfid')
-        lines = subprocess.check_output("/usr/bin/nfc-read", stderr=open('/dev/null','w'))
-        buffer=[]
-        for line in lines.splitlines():
-            line_content = line.decode('UTF-8')
-            line_content = line_content.split()
-            if(line_content[0] =='UID'):
-                buffer.append(line_content)
-            else:
-                pass
+        lines = subprocess.Popen("nfc-read", shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, universal_newlines=True)
+        #lines = subprocess.check_output("/usr/bin/nfc-read", stderr=open('/dev/null','w'))
+        out, _ = lines.communicate()
+        lines = out.splitlines()
+        
+        uid_raw = [s for s in lines if "UID" in s]
+        temp = uid_raw[0].split()
+        uid="".join(temp[2:])
+        
         if util.this_room.rfid_flag==0:
             return None
-        uid = "".join(buffer[0][2:])
+        
         logging.debug(f'Captured {uid}')
         logging.debug('Sending Payload')
         date = str(datetime.datetime.now().replace(microsecond=0))[2:]
@@ -40,7 +40,7 @@ class RFID():
         pincam.take_photo(img_key)
         self.wait_for_response()
         logging.debug('Wait to be released')
-        subprocess.check_output("/usr/bin/nfc-wait", stderr=open('/dev/null','w'))
+        lines = subprocess.Popen("nfc-wait", shell=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         logging.debug('Released')
         return
 
