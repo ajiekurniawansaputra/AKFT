@@ -14,7 +14,17 @@
                 <h5 class="card-title">Registered User</h5>
                 <ul>
                     {%for user in users_data%}
-                    <li class="nav-item">{{user['_id']}} {{user['name']}} <a href="{{ url_for('user', user_id=user['_id'], request_method='details')}}">Edit</a> <a href="{{ url_for('user', user_id=user['_id'], request_method='delete')}}">Delete</a></li>
+                    <li class="nav-item">
+                        {{user['_id']}} {{user['name']}} 
+                        <a href="{{ url_for('user', user_id=user['_id'], request_method='details')}}">Edit</a>
+                        <a href="{{ url_for('user', user_id=user['_id'], request_method='delete')}}">Delete</a>
+                        {% if not user['FP']%}
+                        <a href="{{ url_for('add_enroll_data', the_type='fingerprint', user_id=user['_id'])}}">Add Fingerprint</a>
+                        {% endif %}
+                        {% if not user['RFID']%}
+                        <a href="{{ url_for('add_enroll_data', the_type='rfid', user_id=user['_id'])}}">Add RFID</a>
+                        {% endif %}
+                    </li>
                     {%endfor%}
                 </ul>
             </div>

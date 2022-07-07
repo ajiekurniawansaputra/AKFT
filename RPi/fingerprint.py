@@ -137,8 +137,8 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
             model = data['model']
             startTime = time.time()
             while self.busy == True and ((time.time()-startTime)<10):
+                time.sleep(1)
                 #wait until the fp not busy
-                pass
             if (time.time()-startTime)>=10:
                 logging.debug('conection timeout')
                 return

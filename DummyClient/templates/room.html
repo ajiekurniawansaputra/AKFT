@@ -124,6 +124,19 @@ function sub_topics(){
                             <input type="number" class="text-white bg-dark m-3 form-control" placeholder="room password" name="password" aria-describedby="addon-wrapping">
                             <button type="submit" class="m-3 btn btn-primary">Change</button>
                         </form>
+                        <form class="" action="/set" method="POST">
+                            <input type="number" class="d-none" value="{{room_data['_id']}}" name="room_id">
+                            <div class="checkbox">
+                                <label><input name="fingerprint" type="checkbox" value="off"> fingerprint</label>
+                            </div>
+                            <div class="checkbox">
+                                <label><input name="rfid" type="checkbox" value="off"> rfid</label>
+                            </div>
+                            <div class="checkbox">
+                                <label><input name="pin" type="checkbox" value="off"> pin</label>
+                            </div>
+                            <button type="submit" class="m-3 btn btn-primary">Change</button>
+                        </form>
                     </div>
                 </div>
             </div>

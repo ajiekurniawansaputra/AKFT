@@ -32,10 +32,25 @@ def home():
             for image in images_data:
                 img = image['img']
                 img = img.decode()
+                print(type(img))
                 imgs_data.append(img)
             return render_template("index.html", logs_data=logs_data, imgs_data=imgs_data)
     except Exception as e:
         logging.error(e)
+
+'''
+        imgs_data = []
+            for idx, img_cur in enumerate(logs_data[:5]):
+                try:
+                    print(idx, img_cur['img_key'])
+                    image = image_db.find_one({"img_key":img_cur['img_key']},{ "_id": 0})
+                    img = image['img']
+                    img = img.decode()
+                    print(type(img))
+                    imgs_data.append(img)
+                except:
+                    imgs_data.append(None)
+                    '''
 
 @app.route('/user/enroll',methods=['GET'])
 def enroll():
@@ -50,7 +65,7 @@ def users():
     """
     try:
         if request.method == 'GET':
-            users_data = user_db.find({},{ "_id": 1,'name':1})
+            users_data = user_db.find({})
             return render_template("users.html", users_data=users_data)
         elif request.method == 'POST':
             logging.debug('Receiving New User form')
@@ -63,11 +78,24 @@ def users():
             except: 
                 return render_template("users.html", message='user already exist', users_data=user_db.find({},{ "_id": 1,'name':1})) #user already exist, edit instead
             logging.debug('Sending Registration Command to RPi')
-            send_mqtt_encrypt('SGLCERIC/enro/id',{'user_id':user_id})
-            return render_template("enroll.html", ack=True, user_id=db_ack.inserted_id)
+            #send_mqtt_encrypt('SGLCERIC/enro/id',{'user_id':user_id})
+            #return render_template("enroll.html", ack=True, user_id=db_ack.inserted_id)
+            return redirect(url_for('user', request_method='details', user_id=user_id, 
+                                        message='User data saved, please add fingerprint template and uid'))
     except Exception as e:
         logging.error(e)
 
+@app.route('/users/add/<int:user_id>/<string:the_type>')
+def add_enroll_data(user_id, the_type):
+    """this url is to send command to device to get uid or fingeprint"""
+    try:
+        logging.debug('sending command')
+        send_mqtt_encrypt('SGLCERIC/enro/id',{'user_id':user_id, 'type':the_type})
+        return redirect(url_for('user', request_method='details', user_id=user_id, 
+                                    message='command sent'))
+    except Exception as e:
+        logging.error(e)
+        
 @app.route('/user/<string:request_method>/<int:user_id>')
 def user(request_method, user_id):
     """ 
@@ -219,6 +247,33 @@ def password_set():
     except Exception as e:
         logging.error(e)
 
+@app.route('/set',methods=['POST','GET'])
+def set_auth():
+    """ This url change auth method allowed"""
+    try:
+        if request.method == 'POST':
+            print("get data set")
+            room_id = request.form['room_id']
+            try:
+                fingerprint = request.form['fingerprint']
+                fingerprint = True
+            except:
+                fingerprint = False
+            try:
+                rfid = request.form['rfid']
+                rfid = True
+            except:
+                rfid =  False
+            try:
+                pin = request.form['pin']
+                pin = True
+            except:
+                pin =  False
+            send_mqtt_encrypt('SGLCERIC/set/'+str(room_id),{'fingerprint':fingerprint,'rfid':rfid, 'pin':pin}, qos=1, retain=True)
+            return redirect(url_for('room', request_method='details', room_id=room_id, message=f'Sending Command to change set auth'))
+    except Exception as e:
+        logging.error(e)
+
 """
 OTHER FUNCTION. SGLCERIC. CAPSTONE. ####################################################################
 """
@@ -230,7 +285,7 @@ def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
         data = fernet.encrypt(data)
         data = base64.b64encode(data)                       #byte to string
         data = data.decode('ascii')
-        key = base64.b64encode(key)                         #byte to string
+        #key = base64.b64encode(key)                         #byte to string
         key = key.decode('utf-8')
         msg['data_key'] = key
     msg = json.dumps(msg).encode('utf-8')                   #dict to byte

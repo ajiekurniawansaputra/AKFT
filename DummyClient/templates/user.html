@@ -13,6 +13,15 @@
                 {% endif %}
                 <h5 class="card-title">User {{user_data['name']}} </h5>
                 <h5 class="card-title">ID {{user_data['_id']}} </h5>
+                {% if not user_data['FP']%}
+                <a href="{{ url_for('add_enroll_data', the_type='fingerprint', user_id=user_data['_id'])}}">Add Fingerprint</a>
+                {% endif %}
+                {% if not user_data['RFID']%}
+                <a href="{{ url_for('add_enroll_data', the_type='rfid', user_id=user_data['_id'])}}">Add RFID</a>
+                {% endif %}
+                {% if user_data['RFID']%}
+                {{user_data['RFID']}}
+                {% endif %}
                 {% if room_list%}
                 <h5 class="card-title">Allowed</h5>
                 <ul>

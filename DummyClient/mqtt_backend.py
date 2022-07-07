@@ -60,14 +60,20 @@ def auth_rfid(client, userdata, msg):
         img_key = msg['img_key']
         room_id = msg['roomId']
         data = msg['data']
+        logging.debug(data)
         user_id = None
         try:
-            user_id = user_db.find_one({'RFID':data},{'_id':1})['_id']
-            room_list = room_db.find({'$and':[{'room_id':room_id},{'user_list_ack':{'$in':[user_id]}}]}, {'_id':1,'name':1})
-            logging.debug(room_list)
-            if room_list:
+            logging.debug(data)
+            user_id = user_db.find_one({'RFID':data},{'_id':1,'RFID':1})
+            logging.debug(user_id['RFID'])
+            logging.debug(user_id['_id'])
+            user_id = user_id['_id']
+            room_list = room_db.find_one({'_id':room_id},{'_id':0,'user_list':1})['user_list']
+            logging.debug(user_id in room_list)
+            if user_id in room_list:
                 result = True
-            else: False
+            else: 
+                result = False
         except:
             result = False
         send_mqtt_encrypt('SGLCERIC/auth/rfid/'+str(room_id),{'result':result})
@@ -104,13 +110,14 @@ def save_img(client, userdata, msg):
         logging.debug('Receiving image data')
         msg, data = receive_mqtt_decrypt(msg.payload)
         img_key = msg['img_key']
+        date = img_key[:-4]
+        logging.debug(date)
+        date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
         img = data['img']
         img = base64.b64decode(img)
         img = base64.b64encode(img)
-        logging.debug(date)
-        date = datetime.datetime.strptime(date, '%y-%m-%d %H:%M:%S')
-        db_ack = image_db.insert_one({'img_key':img_key, 'img':img})
-        logging.debug(f'inserted id {db_ack.inserted_id}')
+        db_ack = image_db.insert_one({'img_key':img_key, 'img':img, 'date':date})
+        logging.debug(f"inserted id {db_ack.inserted_id} {img_key}")
     except Exception as e:
             logging.error(e)
 
@@ -120,14 +127,21 @@ def sign_up(client, userdata, msg):
         logging.debug('Sign up, Receiving uid and model')
         msg, data = receive_mqtt_decrypt(msg.payload)
         user_id = msg['user_id']
-        model_FP = data['model']
-        model_RFID = msg['uid']
-        logging.debug('Saving uid and model for user id {user_id}')
-        try:
-            user_db.find_one_and_update({'_id':user_id},{'$set':{"FP":model_FP,'RFID':model_RFID}},{})
-        except:
-            client.publish(topic='SGLCERIC/enro/notif', payload='Error Saving') #delete data in db
-            raise Exception('error in saving model occured')
+        if msg['type'] == 'fingerprint':
+            model_FP = data['model']
+            try:
+                user_db.find_one_and_update({'_id':user_id},{'$set':{"FP":model_FP}},{})
+            except:
+                client.publish(topic='SGLCERIC/enro/notif', payload='Error Saving') #delete data in db
+                raise Exception('error in saving model occured')
+        else:
+            model_RFID = msg['uid']
+            try:
+                user_db.find_one_and_update({'_id':user_id},{'$set':{'RFID':model_RFID}},{})
+            except:
+                client.publish(topic='SGLCERIC/enro/notif', payload='Error Saving') #delete data in db
+                raise Exception('error in saving model occured')
+        #logging.debug('Saving uid and model for user id {user_id}')
         client.publish(topic='SGLCERIC/enro/notif', payload='Saved')
     except Exception as e:
             logging.error(e)
