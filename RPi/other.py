@@ -75,7 +75,7 @@ def receive_mqtt_decrypt(msg):
 def play_sound(file, wait_for_finnish=True):
     """play a sound from a stated directory file"""
     mixer.init()
-    mixer.music.load('sound/'+file)
+    mixer.music.load('/home/pi/Documents/ajie/akft/RPi/sound/'+file)
     mixer.music.play()
     if wait_for_finnish:
         while mixer.music.get_busy()==True:
