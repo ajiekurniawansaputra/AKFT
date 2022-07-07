@@ -47,21 +47,32 @@ def create_uid():
     try:
         #should we add timeout timer?
         logging.debug('Reading RFID')
-        uid = None
-        while uid == None:
-            lines = subprocess.check_output("/usr/bin/nfc-read", stderr=subprocess.DEVNULL)
-            buffer=[]
-            for line in lines.splitlines():
-                line_content = line.decode('UTF-8')
-                line_content = line_content.split()
-                if(line_content[0] =='UID'):
-                    buffer.append(line_content)
-                else:
-                    pass
-            string=buffer[0][2:]
-            uid = "".join(string)
-        logging.debug('RFID captured')
-        return uid
+        process = subprocess.Popen(
+            'nfc-wait',
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            shell=True,
+            encoding='utf-8',
+            errors='replace'
+        )    
+        start_time = time.time()
+        while (start_time+30 > time.time()):
+            realtime_output = process.stdout.readline()
+            if realtime_output == '' and process.poll() is not None:
+                logging.debug('Released')
+                break
+            if realtime_output:
+                raw = realtime_output.strip()
+                if raw[:3]=="UID":
+                    temp = raw.split()
+                    uid="".join(temp[2:])
+                    logging.debug(f'Captured {uid}')
+                    logging.debug('Wait to be released')
+                    break
+            if uid:
+                return uid
+            else: 
+                return -1
     except Exception as e:
         logging.error(e)
         return None
@@ -89,6 +100,10 @@ def on_message_command_enroll(client, userdata, msg):
         util.client.publish(topic='SGLCERIC/enro/notif', payload='Taking RFID')
         while(uid is None):
             uid = create_uid()
+        if uid == -1 :
+            logging.debug('Abort, Timeout')
+            util.client.publish(topic='SGLCERIC/enro/notif', payload='Timeout')
+            return
         util.client.publish(topic='SGLCERIC/enro/notif', payload='RFID taken')
         util.send_mqtt_encrypt("SGLCERIC/enro/model",{'user_id':user_id, 'type':type_auth, 'uid':uid})
     logging.debug('Data sent, id:{user_id}')
