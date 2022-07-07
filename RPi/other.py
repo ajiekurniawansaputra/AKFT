@@ -92,14 +92,11 @@ def door_command(client, userdata, msg):
         start_motor_tread(True)
 
 def start_motor_tread(state):
-    print('starting motor thread')
     motor_thread = threading.Thread(name='motor_thread_func', target=motor_thread_func, args=(state,))
     motor_thread.start()
-    print('motor thread finished')
 
 def motor_thread_func(state):
     try:
-        print("inside change lock")
         gpio.setmode(gpio.BCM)
         gpio.setup(12, gpio.OUT)
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
@@ -108,37 +105,36 @@ def motor_thread_func(state):
         p.start(0) #Initialization
         while True:
             p.ChangeDutyCycle(2)
-            print("open door")
+            logging.debug('Door Unlocked')
             time.sleep(0.5)
             p.ChangeDutyCycle(0)
             door_timeout = time.time()#time.sleep(3)
-            print("wait to open or 5s")
+            logging.debug('Wait for the door to be opened (timeout in 5s)')
             while gpio.input(4)==0 and (time.time()-door_timeout<5):
                 pass
             if gpio.input(4)==0:
-                print("timeout")
+                logging.debug("Timeout")
                 p.ChangeDutyCycle(12.5)
                 start_time = time.time()
                 while (time.time()-start_time<2):
                     pass
                 break
             else:
-                print("wait to close")
+                logging.debug("The door is opened")
+                logging.debug("Wait for the door to be closed")
                 while gpio.input(4)==1:
                     pass
-                print("closeed")
+                logging.debug("The door is closed")
                 p.ChangeDutyCycle(12.5)
                 start_time = time.time()
                 while (time.time()-start_time<2):
                     pass
+                logging.debug('Door locked')
                 break
-        print("cleaning gpio")
         p.stop()
         gpio.cleanup()
         gpio.setmode(gpio.BCM)
-        print("doooone cleaning up")
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
-        print("doooone")
     except Exception as e:
         print(e)
         #p.stop()
