@@ -13,6 +13,7 @@ import adafruit_mpr121
 import datetime
 import random
 import threading
+import subprocess
 
 i2c = busio.I2C(board.SCL, board.SDA)
 mpr121 = adafruit_mpr121.MPR121(i2c)
@@ -80,7 +81,7 @@ def read_keypad():
         print("tombol clear", e)
         pass
 
-pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor).start()
+pin_thread = threading.Thread(name='touchpad_sensor', target=touchpad_sensor)
 
 def password_auth(pin):
     logging.debug('decrypt password')
@@ -88,7 +89,7 @@ def password_auth(pin):
     password = int(msg['password'])
     date = str(datetime.datetime.now().replace(microsecond=0))[2:]
     img_key = random.randint(1111, 9999)
-    img_key = str(img_key)+date
+    img_key = date+str(img_key)
     take_photo(img_key)
     if pin == password:
         logging.debug('pin true')
@@ -112,21 +113,22 @@ def password_auth(pin):
 
 def take_photo(img_key):
     logging.debug('starting camera thread')
-    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(img_key))
+    take_photo_thread = threading.Thread(name='shoot', target=shoot, args=(img_key,))
     take_photo_thread.start()
     logging.debug('camera thread finished')
     
 def shoot(img_key):
     logging.debug('taking a photo')
     try:
-        os.system("libcamera-still -o img.jpg -t 1000 -n --width 1280 --height 720")
+        #os.system("libcamera-still -o img.jpg -t 500 -n --width 1280 --height 720")
+        subprocess.Popen("libcamera-still -o /home/pi/Documents/ajie/akft/RPi/img.jpg -t 500 -n --width 1280 --height 720", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         logging.debug('photo captured')
     except Exception as e:
         logging.debug(f'photo not captured, {e}')
         return
     try:
         logging.debug('photo processing')
-        with open("img.jpg", "rb") as imageFile:
+        with open("/home/pi/Documents/ajie/akft/RPi/img.jpg", "rb") as imageFile:
             img = base64.b64encode(imageFile.read())
             img = img.decode('utf-8')
             #print(img)

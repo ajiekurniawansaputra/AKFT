@@ -23,9 +23,9 @@ class Room:
     def __init__ (self):
         self.id = 6
         self.password = None
-        self.fingerprint_flag = 0
-        self.pin_flag = 0
-        self.rfid_flag = 0
+        self.fingerprint_flag = True
+        self.pin_flag = True
+        self.rfid_flag = True
 
 def send_mqtt_encrypt(topic,msg,data=None,qos=1,retain=False):
     """function to send encrypt data and then send them with mqtt"""
@@ -75,7 +75,7 @@ def receive_mqtt_decrypt(msg):
 def play_sound(file, wait_for_finnish=True):
     """play a sound from a stated directory file"""
     mixer.init()
-    mixer.music.load('sound/'+file)
+    mixer.music.load('/home/pi/Documents/ajie/akft/RPi/sound/'+file)
     mixer.music.play()
     if wait_for_finnish:
         while mixer.music.get_busy()==True:
@@ -92,14 +92,11 @@ def door_command(client, userdata, msg):
         start_motor_tread(True)
 
 def start_motor_tread(state):
-    print('starting motor thread')
     motor_thread = threading.Thread(name='motor_thread_func', target=motor_thread_func, args=(state,))
     motor_thread.start()
-    print('motor thread finished')
 
 def motor_thread_func(state):
     try:
-        print("inside change lock")
         gpio.setmode(gpio.BCM)
         gpio.setup(12, gpio.OUT)
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
@@ -108,37 +105,36 @@ def motor_thread_func(state):
         p.start(0) #Initialization
         while True:
             p.ChangeDutyCycle(2)
-            print("open door")
+            logging.debug('Door Unlocked')
             time.sleep(0.5)
             p.ChangeDutyCycle(0)
             door_timeout = time.time()#time.sleep(3)
-            print("wait to open or 5s")
+            logging.debug('Wait for the door to be opened (timeout in 5s)')
             while gpio.input(4)==0 and (time.time()-door_timeout<5):
                 pass
             if gpio.input(4)==0:
-                print("timeout")
+                logging.debug("Timeout")
                 p.ChangeDutyCycle(12.5)
                 start_time = time.time()
                 while (time.time()-start_time<2):
                     pass
                 break
             else:
-                print("wait to close")
+                logging.debug("The door is opened")
+                logging.debug("Wait for the door to be closed")
                 while gpio.input(4)==1:
                     pass
-                print("closeed")
+                logging.debug("The door is closed")
                 p.ChangeDutyCycle(12.5)
                 start_time = time.time()
                 while (time.time()-start_time<2):
                     pass
+                logging.debug('Door locked')
                 break
-        print("cleaning gpio")
         p.stop()
         gpio.cleanup()
         gpio.setmode(gpio.BCM)
-        print("doooone c;eaning up")
         gpio.setup (18, gpio.IN, pull_up_down=gpio.PUD_UP)
-        print("doooone")
     except Exception as e:
         print(e)
         #p.stop()
@@ -155,11 +151,11 @@ def set_command(client, userdata, msg):
 
 this_room = Room()
 client = mqtt.Client(protocol=mqtt.MQTTv311)
-with open("server_public_key.pem", "rb") as key_file:  #server public key
+with open("/home/pi/Documents/ajie/akft/RPi/server_public_key.pem", "rb") as key_file:  #server public key
     public_key = serialization.load_pem_public_key(
         key_file.read(),
         backend=default_backend())
-with open("sensor_private_key.pem", "rb") as key_file: #rpi private key
+with open("/home/pi/Documents/ajie/akft/RPi/sensor_private_key.pem", "rb") as key_file: #rpi private key
     private_key = serialization.load_pem_private_key(
         key_file.read(),
         password=None,

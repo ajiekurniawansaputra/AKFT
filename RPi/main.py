@@ -6,6 +6,7 @@ import pincam
 import fingerprint
 import rfid
 import logging
+import threading
 
 def background():
     while True:
@@ -19,8 +20,8 @@ def background():
                 client.message_callback_add(item['topic_name'], item["callback"])
             client.will_set(topic='SGLCERIC/connection/'+str(util.this_room.id), payload='Device Lost Connection', qos=1, retain=True )
             #client.tls_set('/home/pi/Documents/client/ca.crt', '/home/pi/Documents/client/client.crt', '/home/pi/Documents/client/client.key')
-            #client.connect('broker.hivemq.com', 1883, 10)
-            client.connect('127.0.0.1', 8883, 10)
+            client.connect('broker.hivemq.com', 1883, 10)
+            #client.connect('127.0.0.1', 8883, 10)
             client.loop_forever()
         except Exception as e:
             logging.debug('background thread failed, restarting', e)
@@ -82,4 +83,9 @@ if __name__ == "__main__":
                             level=logging.DEBUG)
     else:
         logging.basicConfig(format='%(asctime)s - %(message)s', datefmt='%d-%b-%y %H:%M:%S')
-    background()
+    background_thread = threading.Thread(name='background', target=background)
+    background_thread.start()
+    rfid.rfid_thread.start()
+    pincam.pin_thread.start()
+    fingerprint.fingerprint_thread.start()
+    

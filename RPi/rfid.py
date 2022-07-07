@@ -8,6 +8,7 @@ import time
 import datetime
 import logging
 import random
+import threading
 
 class RFID():
     def __init__(self):
@@ -15,32 +16,38 @@ class RFID():
             
     def read(self):
         logging.debug('Reading rfid')
-        lines = subprocess.check_output("/usr/bin/nfc-poll2", stderr=open('/dev/null','w'))
-        buffer=[]
-        for line in lines.splitlines():
-            line_content = line.decode('UTF-8')
-            line_content = line_content.split()
-            if(line_content[0] =='UID'):
-                buffer.append(line_content)
-            else:
-                pass
-        if util.this_room.rfid_flag==0:
-            return None
-        uid = "".join(buffer[0][2:])
-        logging.debug(f'Captured {uid}')
-        logging.debug('Sending Payload')
-        img_key = random.randint(1111, 9999)
-        date = str(datetime.datetime.now().replace(microsecond=0))[2:]
-        util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
-            {'date':date,
-            'roomId':util.this_room.id,
-            'data':uid,
-            'img_key':img_key})
-        pincam.take_photo(date, img_key)
-        self.wait_for_response()
-        logging.debug('Wait to be released')
-        subprocess.check_output("/usr/bin/nfc-poll", stderr=open('/dev/null','w'))
-        logging.debug('Released')
+        process = subprocess.Popen(
+            'nfc-wait',
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            shell=True,
+            encoding='utf-8',
+            errors='replace'
+        )    
+        while util.this_room.rfid_flag==True:
+            realtime_output = process.stdout.readline()
+
+            if realtime_output == '' and process.poll() is not None:
+                logging.debug('Released')
+                break
+
+            if realtime_output:
+                raw = realtime_output.strip()
+                if raw[:3]=="UID":
+                    temp = raw.split()
+                    uid="".join(temp[2:])
+                    logging.debug(f'Captured {uid}')
+                    logging.debug('Sending Payload')
+                    date = str(datetime.datetime.now().replace(microsecond=0))[2:]
+                    img_key = date+str(random.randint(1111, 9999))
+                    util.send_mqtt_encrypt('SGLCERIC/auth/rfid',
+                        {'date':date,
+                        'roomId':util.this_room.id,
+                        'data':uid,
+                        'img_key':img_key})
+                    pincam.take_photo(img_key)
+                    self.wait_for_response()
+                    logging.debug('Wait to be released')
         return
 
     def response(self, client, userdata, msg):
@@ -81,4 +88,4 @@ def rfid_sensor():
             print(e)
 
 nfc = RFID()
-#rfid_thread = threading.Thread(name='rfid_sensor', target=rfid_sensor).start()
+rfid_thread = threading.Thread(name='rfid_sensor', target=rfid_sensor)
