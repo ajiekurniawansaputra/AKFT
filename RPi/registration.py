@@ -45,7 +45,6 @@ def create_model():
 
 def create_uid():
     try:
-        #should we add timeout timer?
         logging.debug('Reading RFID')
         process = subprocess.Popen(
             'nfc-wait',
@@ -56,22 +55,18 @@ def create_uid():
             errors='replace'
         )    
         start_time = time.time()
-        while (start_time+30 > time.time()):
+        uid = None
+        while True:
             realtime_output = process.stdout.readline()
-            if realtime_output == '' and process.poll() is not None:
-                logging.debug('Released')
-                break
             if realtime_output:
                 raw = realtime_output.strip()
                 if raw[:3]=="UID":
                     temp = raw.split()
                     uid="".join(temp[2:])
                     logging.debug(f'Captured {uid}')
-                    logging.debug('Wait to be released')
-                    break
             if uid:
-                return uid
-            else: 
+                return uid 
+            elif (start_time+30 < time.time()):
                 return -1
     except Exception as e:
         logging.error(e)
