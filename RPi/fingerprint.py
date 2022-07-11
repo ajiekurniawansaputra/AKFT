@@ -40,11 +40,10 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 logging.debug('Identify, Search for matching template')
                 ack_packet = self.finger_search()
                 self.action(ack_packet)
-                if self.get_image() == 0:#di ilangin aja ga guna
-                    logging.debug('Wait to be released')
-                    while self.get_image() == 0:
-                        pass
-                    logging.debug('Released')
+                logging.debug('Wait to be released')
+                while self.get_image() == 0:
+                    pass
+                logging.debug('Released')
             except Exception as e:
                 logging.error(e)
             finally:
@@ -70,7 +69,7 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
                 'result': True,
                 'img_key':img_key})
         elif ack_packet == 9:
-            util.play_sound('Fingerprint match.mp3')
+            util.play_sound('Fingerprint not match.mp3')
             util.send_mqtt_encrypt('SGLCERIC/auth/fp',
                 {'date':date,
                 'room_id':util.this_room.id,
@@ -88,8 +87,8 @@ class FP(adafruit_fingerprint.Adafruit_Fingerprint):
             location = msg['location']
             startTime = time.time()
             while self.busy == True and ((time.time()-startTime)<30):
+                time.sleep(1)
                 #wait until the fp not busy
-                pass
             if (time.time()-startTime)>=30:
                 logging.debug('conection timeout')
                 return

@@ -465,7 +465,7 @@ class Adafruit_Fingerprint:
         self._uart.write(bytearray(packet))
 
     def _send_data(self, data: List[int]):
-        time.sleep(0.25)
+        #time.sleep(0.25)
         self._print_debug("_send_data length:", len(data))
         self._print_debug("_send_data data:", data, data_type="hex")
         # self.read_sysparam() #moved this to init
@@ -515,7 +515,7 @@ class Adafruit_Fingerprint:
 
             self._print_debug("_send_data sending packet:", packet, data_type="hex")
             self._uart.write(packet)
-            time.sleep(0.1)
+            #time.sleep(0.1)
 
     def soft_reset(self):
         """Performs a soft reset of the sensor"""
